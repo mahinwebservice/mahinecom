@@ -1,0 +1,67 @@
+[debug] [2026-09-20T14:51:02.866Z] ----------------------------------------------------------------------
+[debug] [2026-09-20T14:51:02.869Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\ALPHA TECH\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting --project mahinsaas
+[debug] [2026-09-20T14:51:02.869Z] CLI Version:   15.28.2
+[debug] [2026-09-20T14:51:02.869Z] Platform:      win32
+[debug] [2026-09-20T14:51:02.869Z] Node Version:  v24.19.0
+[debug] [2026-09-20T14:51:02.869Z] Detected Agent: antigravity
+[debug] [2026-09-20T14:51:02.869Z] Time:          Sun Sep 20 2026 20:51:02 GMT+0600 (Bangladesh Standard Time)
+[debug] [2026-09-20T14:51:02.869Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-20T14:51:04.051Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-20T14:51:04.052Z] > authorizing via signed-in user (thakurgaonstore@gmail.com)
+[debug] [2026-09-20T14:51:04.052Z] [iam] checking project mahinsaas for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-09-20T14:51:04.064Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:04.065Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:04.066Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mahinsaas:testIamPermissions [none]
+[debug] [2026-09-20T14:51:04.066Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mahinsaas:testIamPermissions  x-goog-user-project=mahinsaas
+[debug] [2026-09-20T14:51:04.066Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mahinsaas:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-20T14:51:05.694Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mahinsaas:testIamPermissions 200
+[debug] [2026-09-20T14:51:05.694Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mahinsaas:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-09-20T14:51:05.695Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:05.695Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:05.695Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/mahinsaas [none]
+[debug] [2026-09-20T14:51:06.526Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/mahinsaas 200
+[debug] [2026-09-20T14:51:06.527Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/mahinsaas {"projectId":"mahinsaas","projectNumber":"764015095944","displayName":"MahinSaas","name":"projects/mahinsaas","resources":{"hostingSite":"mahinsaas"},"state":"ACTIVE","labels":{"firebase":"enabled"},"etag":"1_884f762f-c87f-4778-b722-7f5b88871770"}
+[debug] [2026-09-20T14:51:09.374Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:09.375Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:09.375Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites pageToken=&pageSize=10
+[debug] [2026-09-20T14:51:10.860Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites 200
+[debug] [2026-09-20T14:51:10.861Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites {"sites":[{"name":"projects/mahinsaas/sites/mahinsaas","defaultUrl":"https://mahinsaas.web.app","appId":"1:764015095944:web:9aa6e715988119be942f3d","type":"DEFAULT_SITE"}]}
+[debug] [2026-09-20T14:51:10.861Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:10.861Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:10.861Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:764015095944:web:9aa6e715988119be942f3d/config [none]
+[debug] [2026-09-20T14:51:14.732Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:764015095944:web:9aa6e715988119be942f3d/config 200
+[debug] [2026-09-20T14:51:14.732Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:764015095944:web:9aa6e715988119be942f3d/config {"projectId":"mahinsaas","appId":"1:764015095944:web:9aa6e715988119be942f3d","storageBucket":"mahinsaas.firebasestorage.app","apiKey":"AIzaSyCPppgCmZSd-4zOs9u8_zaiFCrc4upHASQ","authDomain":"mahinsaas.firebaseapp.com","messagingSenderId":"764015095944","measurementId":"G-8XKPZN36HK","projectNumber":"764015095944","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 16.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-09-20T14:51:20.729Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:20.729Z] Checked if tokens are valid: true, expires at: 1789917584301
+[debug] [2026-09-20T14:51:20.729Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites/mahinsaas [none]
+[debug] [2026-09-20T14:51:22.365Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites/mahinsaas 200
+[debug] [2026-09-20T14:51:22.365Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/mahinsaas/sites/mahinsaas {"name":"projects/mahinsaas/sites/mahinsaas","defaultUrl":"https://mahinsaas.web.app","appId":"1:764015095944:web:9aa6e715988119be942f3d","type":"DEFAULT_SITE"}
+[info] ▲ Next.js 16.3.5 (Turbopack)
+
+[info] - Environments: .env.local
+
+[info] ✓ Running next.config.ts took 31ms
+
+[info] 
+
+[info] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+[info]   Creating an optimized production build ...
+

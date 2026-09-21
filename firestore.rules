@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isTenantAdmin(tenantId) {
+      return request.auth != null && 
+        (
+          get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.tenantId == tenantId ||
+          get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin'
+        );
+    }
+
+    function isSuperAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin';
+    }
+
+    // System Users
+    match /system_users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId || isSuperAdmin();
+      
+      // Allow self-registration if they are claiming a tenant where they were invited
+      allow create: if request.auth != null && request.auth.uid == userId 
+        && request.resource.data.email == request.auth.token.email
+        && get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)/settings/general).data.email == request.auth.token.email;
+        
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /tenants/{tenantId} {
+      match /settings/{docId} {
+        allow read: if docId == 'general' || docId == 'homepage_layout' || docId == 'footer' || isTenantAdmin(tenantId);
+        // Only SuperAdmin can write to 'general' (which holds the admin email). 
+        // TenantAdmin can update other settings.
+        allow update: if isTenantAdmin(tenantId) && docId != 'general';
+        allow create, delete: if isSuperAdmin();
+        allow update: if isSuperAdmin();
+      }
+      match /products/{productId} {
+        allow read: if true;
+        allow write: if isTenantAdmin(tenantId);
+      }
+      match /services/{serviceId} {
+        allow read: if true;
+        allow write: if isTenantAdmin(tenantId);
+      }
+      match /orders/{orderId} {
+        allow create: if true;
+        allow read, update, delete: if isTenantAdmin(tenantId);
+      }
+      match /quotations/{quoteId} {
+        allow create: if true;
+        allow read, update, delete: if isTenantAdmin(tenantId);
+      }
+    }
+  }
+}
