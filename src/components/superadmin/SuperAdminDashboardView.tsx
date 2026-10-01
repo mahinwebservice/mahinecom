@@ -1,9 +1,9 @@
-// @ts-nocheck
 'use client';
-
+// @ts-nocheck
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { 
   Store, 
@@ -21,6 +21,7 @@ import {
   Sliders,
   CheckCircle,
   Eye,
+  EyeOff,
   Image as ImageIcon,
   DollarSign,
   Search,
@@ -136,7 +137,7 @@ export default function SuperAdminDashboardView({ onLogout }: { onLogout?: () =>
   const fetchInquiries = async () => {
     try {
       const snap = await getDocs(collection(db, 'inquiries'));
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
       list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setInquiries(list);
     } catch (err) {
@@ -1028,7 +1029,7 @@ export default function SuperAdminDashboardView({ onLogout }: { onLogout?: () =>
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setCustomizerSubTab(tab.id)}
+                  onClick={() => setCustomizerSubTab(tab.id as any)}
                   className={`px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${customizerSubTab === tab.id ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'}`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />

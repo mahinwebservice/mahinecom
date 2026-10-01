@@ -371,18 +371,17 @@ export function AgencyLandingPage() {
               key={idx}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive ? 'opacity-100 z-0' : 'opacity-0 -z-10 pointer-events-none'}`}
             >
-              {/* Ken-Burns Slow Zoom Image */}
-              <div 
-                className={`w-full h-full bg-cover bg-center transition-transform duration-[7000ms] ease-out ${isActive ? 'scale-110 translate-y-[-1%]' : 'scale-100'}`}
-                style={{
-                  backgroundImage: `url('${s.bgImage || 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1920&q=80'}')`
-                }}
+              {/* Ken-Burns Slow Zoom Image (Clearly Visible Cinematic Video Motion) */}
+              <img 
+                src={s.bgImage || 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1920&q=80'} 
+                alt={s.title}
+                className={`w-full h-full object-cover transition-transform duration-[8000ms] ease-out select-none pointer-events-none ${isActive ? 'scale-110 -translate-y-2' : 'scale-100'}`}
               />
-              {/* Dark Cinematic Vignette & Blur Gradient Overlay (Ensures Text is 100% Readable) */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/60" />
-              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-[1px]" />
+              {/* Cinematic Vignette Overlay (Leaves Center Image Crisp & Bright, Dims Edges For Super Sharp Text) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/40" />
+              <div className="absolute inset-0 bg-slate-950/30" />
               {/* Radial Glowing Ambient Accent */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-blue-600/20 rounded-full blur-[140px] pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-blue-600/25 rounded-full blur-[160px] pointer-events-none" />
             </div>
           );
         })}
