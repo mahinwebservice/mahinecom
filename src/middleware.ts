@@ -31,13 +31,23 @@ export function middleware(req: NextRequest) {
       return NextResponse.rewrite(new URL('/home' + url.pathname, req.url));
     }
 
-    // 3. /mahinsaas root login
+    // 3. /mahinsaas root superadmin login
     if (url.pathname === '/mahinsaas') {
+      return NextResponse.next();
+    }
+
+    // 4. /saasecom client merchant login
+    if (url.pathname === '/saasecom') {
       return NextResponse.next();
     }
 
     // 4. Otherwise (like /store1, /store1/ecomsaas, /store1/mahinsaas), let Next.js match app/[tenant]/...
     return NextResponse.next();
+  }
+
+  // Custom domain merchant login rewrite
+  if (url.pathname === '/saasecom' || url.pathname === '/ecomsaas') {
+    return NextResponse.rewrite(new URL('/saasecom?customDomain=' + currentHost, req.url));
   }
 
   // SUBDOMAIN LOGIC (For custom subdomains like store1.domain.com)

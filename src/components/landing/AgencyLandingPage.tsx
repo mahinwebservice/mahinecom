@@ -206,7 +206,7 @@ export const defaultSettings = {
     col3Links: [
       { label: 'লাইভ প্রজেক্ট ডেমো', url: '#demos' },
       { label: 'প্যাকেজ ও বাজেট', url: '#pricing' },
-      { label: 'মার্চেন্ট লগিন (/ecomsaas)', url: '/store1/ecomsaas' },
+      { label: 'মার্চেন্ট লগিন (/saasecom)', url: '/saasecom' },
       { label: 'সুপার এডমিন লগিন (/mahinsaas)', url: '/mahinsaas' }
     ],
     col4Title: 'অফিস ও যোগাযোগ'
@@ -342,7 +342,7 @@ export function AgencyLandingPage() {
           {/* Action CTAs */}
           <div className="flex items-center gap-3">
             <Link 
-              href="/store1/ecomsaas"
+              href="/saasecom"
               className="text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition"
             >
               ক্লায়েন্ট লগিন

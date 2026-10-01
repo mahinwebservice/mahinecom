@@ -26,20 +26,41 @@ export default function TenantEcomsaasLayout({ children }: { children: React.Rea
 
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        router.push(`/${tenantId}/ecomsaas`);
+        router.push(`/saasecom?store=${tenantId}`);
         return;
       }
 
-      const userDoc = await getDoc(doc(db, `system_users/${user.uid}`));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        if (userData.role === 'superadmin' || userData.tenantId === tenantId) {
-          setLoading(false);
-        } else {
-          router.push(`/${tenantId}/ecomsaas`);
+      try {
+        // 1. Check system_users
+        const userDoc = await getDoc(doc(db, `system_users/${user.uid}`));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === 'superadmin' || userData.tenantId === tenantId) {
+            setLoading(false);
+            return;
+          }
         }
-      } else {
-        router.push(`/${tenantId}/ecomsaas`);
+
+        // 2. Check tenant admin email
+        const tenantSnap = await getDoc(doc(db, 'tenants', tenantId));
+        if (tenantSnap.exists()) {
+          const tData = tenantSnap.data();
+          if (tData.email && tData.email.toLowerCase() === user.email?.toLowerCase()) {
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 3. Fallback: check localStorage merchant session
+        if (typeof window !== 'undefined' && localStorage.getItem('merchant_tenant') === tenantId) {
+          setLoading(false);
+          return;
+        }
+
+        router.push(`/saasecom?store=${tenantId}`);
+      } catch (err) {
+        console.error("Auth verification error in layout:", err);
+        setLoading(false);
       }
     });
 
