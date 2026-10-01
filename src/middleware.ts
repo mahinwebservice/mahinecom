@@ -26,13 +26,9 @@ export function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // 2. Root Super Admin paths (/superadmin)
-    if (url.pathname === '/superadmin' || url.pathname === '/superadmin/' || url.pathname === '/superadmin/login') {
-      return NextResponse.rewrite(new URL('/mahinsaas', req.url));
-    }
-
-    if (url.pathname.startsWith('/superadmin/')) {
-      return NextResponse.rewrite(new URL('/home' + url.pathname, req.url));
+    // 2. Root Super Admin paths -> Always redirect cleanly to /mahinsaas
+    if (url.pathname === '/superadmin' || url.pathname.startsWith('/superadmin')) {
+      return NextResponse.redirect(new URL('/mahinsaas', req.url));
     }
 
     // 3. /mahinsaas root superadmin login

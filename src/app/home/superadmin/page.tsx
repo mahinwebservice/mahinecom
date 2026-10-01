@@ -1,2 +1,5 @@
-// @ts-nocheck
-export { default } from '@/app/mahinsaas/page';
+import { redirect } from 'next/navigation';
+
+export default function RedirectToMahinSaas() {
+  redirect('/mahinsaas');
+}
