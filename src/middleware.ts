@@ -13,23 +13,33 @@ export function middleware(req: NextRequest) {
     currentHost = currentHost.split(':')[0];
   }
 
-  // Treat as ROOT domain if it matches localhost, root domain, or any Vercel default domain for this project
-  if (
+  const isRootDomain =
     currentHost === 'localhost' ||
     currentHost === rootDomainBase ||
     currentHost.includes('vercel.app') || 
     currentHost === 'mahinsaas.web.app' || 
-    currentHost === 'mahinsaas.firebaseapp.com'
-  ) {
-    // If it's the root landing page or superadmin path, rewrite to /home
-    if (url.pathname === '/' || url.pathname.startsWith('/superadmin')) {
+    currentHost === 'mahinsaas.firebaseapp.com';
+
+  if (isRootDomain) {
+    // 1. Root Super Admin paths (/superadmin or /mahinsaas)
+    if (url.pathname === '/superadmin' || url.pathname.startsWith('/superadmin/')) {
       return NextResponse.rewrite(new URL('/home' + url.pathname, req.url));
     }
-    // Otherwise (like /store1/admin/login), let Next.js handle it normally (matches app/[tenant]/...)
+
+    if (url.pathname === '/mahinsaas') {
+      return NextResponse.rewrite(new URL('/mahinsaas', req.url));
+    }
+
+    // 2. Root landing page
+    if (url.pathname === '/') {
+      return NextResponse.rewrite(new URL('/home', req.url));
+    }
+
+    // 3. Otherwise (like /store1/ecomsaas or /store1/mahinsaas), let Next.js match app/[tenant]/...
     return NextResponse.next();
   }
 
-  // SUBDOMAIN LOGIC (For actual custom subdomains like store1.domain.com)
+  // SUBDOMAIN LOGIC (For custom subdomains like store1.domain.com)
   let tenantId = currentHost.replace('.' + rootDomainBase, '');
   return NextResponse.rewrite(new URL('/' + tenantId + url.pathname + url.search, req.url));
 }

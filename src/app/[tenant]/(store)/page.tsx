@@ -80,7 +80,7 @@ export default function TenantStorefrontPage() {
               <span>Cart / Checkout</span>
             </Link>
             <Link 
-              href={`/${tenantId}/admin/login`} 
+              href={`/${tenantId}/ecomsaas`} 
               className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition px-2 py-1"
             >
               Merchant Login
@@ -116,7 +116,7 @@ export default function TenantStorefrontPage() {
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link 
-                    href={`/${tenantId}/admin/storefront`}
+                    href={`/${tenantId}/ecomsaas/storefront`}
                     className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl backdrop-blur-md transition border border-white/20"
                   >
                     Customize Storefront
@@ -170,7 +170,7 @@ export default function TenantStorefrontPage() {
             © {new Date().getFullYear()} {storeTitle}. Powered by <span className="font-bold text-slate-800">SaaS Commerce</span>.
           </p>
           <div className="flex items-center gap-6 text-sm text-slate-500">
-            <Link href={`/${tenantId}/admin/login`} className="hover:text-blue-600">Store Admin</Link>
+            <Link href={`/${tenantId}/ecomsaas`} className="hover:text-blue-600">Store Admin</Link>
             <Link href={`/${tenantId}/checkout`} className="hover:text-blue-600">Checkout</Link>
           </div>
         </div>

@@ -179,20 +179,30 @@ export default function SuperAdminDashboard() {
                           </a>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <a 
-                              href={'/' + tenant.id + '/admin/register'}
+                              href={'/' + tenant.id + '/ecomsaas/register'}
                               target="_blank"
-                              className="px-3 py-1.5 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition text-xs"
+                              className="px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-lg hover:bg-emerald-100 transition text-xs border border-emerald-200"
+                              title="Give this URL to the client to set their password"
                             >
-                              Invite Link
+                              Client Claim
                             </a>
                             <a 
-                              href={'/' + tenant.id + '/admin/login'}
+                              href={'/' + tenant.id + '/ecomsaas'}
                               target="_blank"
-                              className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition text-xs"
+                              className="px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg hover:bg-blue-100 transition text-xs border border-blue-200"
+                              title="Client Merchant Login URL"
                             >
-                              Admin Login
+                              Client Login (/ecomsaas)
+                            </a>
+                            <a 
+                              href={'/' + tenant.id + '/mahinsaas'}
+                              target="_blank"
+                              className="px-2.5 py-1 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition text-xs"
+                              title="Super Admin Login URL for this store"
+                            >
+                              Super Admin (/mahinsaas)
                             </a>
                           </div>
                         </td>
