@@ -20,13 +20,19 @@ import {
   Mail,
   Sliders,
   CheckCircle,
-  Eye
+  Eye,
+  Image as ImageIcon,
+  DollarSign,
+  Search,
+  Trash2
 } from 'lucide-react';
 import { defaultSettings } from '@/components/landing/AgencyLandingPage';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'stores' | 'customizer' | 'inquiries'>('stores');
+  const [customizerSubTab, setCustomizerSubTab] = useState<'branding' | 'seo' | 'slider' | 'services' | 'pricing' | 'contact' | 'footer'>('branding');
+  
   const [tenants, setTenants] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +80,19 @@ export default function SuperAdminDashboard() {
     try {
       const snap = await getDoc(doc(db, 'platform_settings', 'landing_page'));
       if (snap.exists()) {
-        setSiteSettings({ ...defaultSettings, ...snap.data() });
+        const data = snap.data();
+        setSiteSettings({
+          ...defaultSettings,
+          ...data,
+          branding: { ...defaultSettings.branding, ...(data.branding || {}) },
+          seo: { ...defaultSettings.seo, ...(data.seo || {}) },
+          hero: { ...defaultSettings.hero, ...(data.hero || {}) },
+          services: data.services && data.services.length > 0 ? data.services : defaultSettings.services,
+          pricing: data.pricing && data.pricing.length > 0 ? data.pricing : defaultSettings.pricing,
+          demos: { ...defaultSettings.demos, ...(data.demos || {}) },
+          contact: { ...defaultSettings.contact, ...(data.contact || {}) },
+          footer: { ...defaultSettings.footer, ...(data.footer || {}) }
+        });
       }
     } catch (error) {
       console.error("Error fetching site settings:", error);
@@ -148,6 +166,60 @@ export default function SuperAdminDashboard() {
     } finally {
       setSavingSettings(false);
     }
+  };
+
+  // Slide management helpers
+  const handleUpdateSlide = (index: number, field: string, value: string) => {
+    const updated = [...siteSettings.hero.slides];
+    updated[index] = { ...updated[index], [field]: value };
+    setSiteSettings({
+      ...siteSettings,
+      hero: { ...siteSettings.hero, slides: updated }
+    });
+  };
+
+  const handleAddSlide = () => {
+    const newSlide = {
+      tag: 'নতুন ফিচার (New Solution)',
+      title: 'আমাদের নতুন সফটওয়্যার সার্ভিস',
+      highlight: 'আধুনিক অটোমেশন প্ল্যাটফর্ম',
+      description: 'আপনার ব্যবসার জন্য সম্পূর্ণ কাস্টমাইজড সফটওয়্যার সমাধান।',
+      bgImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1920&q=80',
+      ctaText: 'ডেমো দেখুন',
+      ctaLink: '#demos',
+      secondaryCtaText: 'পরামর্শ নিন',
+      secondaryCtaLink: '#contact'
+    };
+    setSiteSettings({
+      ...siteSettings,
+      hero: { ...siteSettings.hero, slides: [...siteSettings.hero.slides, newSlide] }
+    });
+  };
+
+  const handleRemoveSlide = (index: number) => {
+    if (siteSettings.hero.slides.length <= 1) {
+      alert('At least one slide must remain');
+      return;
+    }
+    const updated = siteSettings.hero.slides.filter((_, idx) => idx !== index);
+    setSiteSettings({
+      ...siteSettings,
+      hero: { ...siteSettings.hero, slides: updated }
+    });
+  };
+
+  // Pricing management helpers
+  const handleUpdatePricing = (index: number, field: string, value: any) => {
+    const updated = [...siteSettings.pricing];
+    updated[index] = { ...updated[index], [field]: value };
+    setSiteSettings({ ...siteSettings, pricing: updated });
+  };
+
+  // Services management helpers
+  const handleUpdateService = (index: number, field: string, value: any) => {
+    const updated = [...siteSettings.services];
+    updated[index] = { ...updated[index], [field]: value };
+    setSiteSettings({ ...siteSettings, services: updated });
   };
 
   return (
@@ -341,14 +413,14 @@ export default function SuperAdminDashboard() {
           </div>
         )}
 
-        {/* TAB 2: WEBSITE CUSTOMIZER */}
+        {/* TAB 2: COMPLETE WEBSITE CUSTOMIZER */}
         {activeTab === 'customizer' && (
-          <div className="max-w-4xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="max-w-5xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Website Customizer</h1>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Full Website Customizer</h1>
                 <p className="text-slate-500 text-sm mt-1">
-                  Customize the branding, hero slider, services, demo links and contact info on https://mahinecom.vercel.app/
+                  Customize every element of https://mahinecom.vercel.app/ in real time.
                 </p>
               </div>
 
@@ -361,209 +433,496 @@ export default function SuperAdminDashboard() {
                   <Eye className="w-3.5 h-3.5" />
                   <span>View Homepage</span>
                 </a>
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={savingSettings}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{savingSettings ? 'Saving...' : 'Save All Settings'}</span>
+                </button>
               </div>
             </div>
 
             {settingsSuccess && (
               <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold text-sm flex items-center gap-2 shadow-sm">
                 <CheckCircle className="w-5 h-5 shrink-0" />
-                <span>Website settings saved successfully! Live homepage is now updated.</span>
+                <span>All settings saved successfully! Live website has been updated.</span>
               </div>
             )}
 
-            <form onSubmit={handleSaveSettings} className="space-y-8">
+            {/* Customizer Sub-Tabs Navigation */}
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-3 mb-6 overflow-x-auto text-xs font-bold">
+              {[
+                { id: 'branding', label: '1. Branding & Logo', icon: Palette },
+                { id: 'seo', label: '2. Browser Title & SEO', icon: Search },
+                { id: 'slider', label: '3. Video-Style Hero Slider', icon: ImageIcon },
+                { id: 'services', label: '4. Service Cards', icon: Store },
+                { id: 'pricing', label: '5. Price Cards', icon: DollarSign },
+                { id: 'contact', label: '6. Contact & Socials', icon: Phone },
+                { id: 'footer', label: '7. Footer & Info', icon: Sliders }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setCustomizerSubTab(tab.id)}
+                  className={`px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 whitespace-nowrap ${customizerSubTab === tab.id ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'}`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSaveSettings} className="space-y-6">
               
-              {/* Section 1: Agency Branding */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                  <Palette className="w-4 h-4 text-blue-600" /> Branding & Title
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
+              {/* SUBTAB 1: BRANDING & IDENTITY */}
+              {customizerSubTab === 'branding' && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <Palette className="w-4 h-4 text-blue-600" /> Platform Identity & Logo
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Agency / Platform Name</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.branding.agencyName}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          branding: { ...siteSettings.branding, agencyName: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Top Badge Text</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.branding.badgeText}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          branding: { ...siteSettings.branding, badgeText: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      />
+                    </div>
+                  </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Agency / Platform Name</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Tagline / Slogan</label>
                     <input 
                       type="text" 
-                      value={siteSettings.branding.agencyName}
+                      value={siteSettings.branding.tagline}
                       onChange={e => setSiteSettings({
                         ...siteSettings,
-                        branding: { ...siteSettings.branding, agencyName: e.target.value }
+                        branding: { ...siteSettings.branding, tagline: e.target.value }
                       })}
                       className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Top Badge Text</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.branding.badgeText}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        branding: { ...siteSettings.branding, badgeText: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                    />
+                  <div className="grid sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Logo Image URL (Optional)</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.branding.logoUrl || ''}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          branding: { ...siteSettings.branding, logoUrl: e.target.value }
+                        })}
+                        placeholder="https://example.com/logo.png"
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" 
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1">Leave empty to use modern icon badge logo.</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Favicon URL</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.branding.faviconUrl || ''}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          branding: { ...siteSettings.branding, faviconUrl: e.target.value }
+                        })}
+                        placeholder="/favicon.ico or image URL"
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" 
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Tagline / Slogan</label>
-                  <input 
-                    type="text" 
-                    value={siteSettings.branding.tagline}
-                    onChange={e => setSiteSettings({
-                      ...siteSettings,
-                      branding: { ...siteSettings.branding, tagline: e.target.value }
-                    })}
-                    className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                  />
-                </div>
-              </div>
+              )}
 
-              {/* Section 2: Live Demo Links */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                  <Globe className="w-4 h-4 text-emerald-600" /> Demo Buttons URLs
-                </h3>
-                <div className="space-y-3">
+              {/* SUBTAB 2: BROWSER TITLE & SEO */}
+              {customizerSubTab === 'seo' && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <Search className="w-4 h-4 text-emerald-600" /> Browser Title & SEO Meta Tags
+                  </h3>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">E-Commerce Live Demo URL</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Browser Tab Title (&lt;title&gt;)</label>
                     <input 
                       type="text" 
-                      value={siteSettings.demos?.ecomUrl || ''}
+                      value={siteSettings.seo?.browserTitle || ''}
                       onChange={e => setSiteSettings({
                         ...siteSettings,
-                        demos: { ...siteSettings.demos, ecomUrl: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" 
-                      placeholder="https://mahinecom.vercel.app/store1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">School ERP Demo URL</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.demos?.schoolUrl || ''}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        demos: { ...siteSettings.demos, schoolUrl: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" 
-                      placeholder="https://mahinecom.vercel.app/store1"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">POS Demo URL</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.demos?.posUrl || ''}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        demos: { ...siteSettings.demos, posUrl: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" 
-                      placeholder="https://mahinecom.vercel.app/store1"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Contact & Social Info */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                  <Phone className="w-4 h-4 text-purple-600" /> Contact & Social Links
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Number (e.g. 88017XXXXXXXX)</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.contact.whatsappNumber}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        contact: { ...siteSettings.contact, whatsappNumber: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Support Phone</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.contact.phone}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        contact: { ...siteSettings.contact, phone: e.target.value }
+                        seo: { ...siteSettings.seo, browserTitle: e.target.value }
                       })}
                       className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
                     />
+                    <p className="text-[11px] text-gray-400 mt-1">This text appears at the top of the browser tab.</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Official Email</label>
-                    <input 
-                      type="email" 
-                      value={siteSettings.contact.email}
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Google & Social Meta Description</label>
+                    <textarea 
+                      rows={3}
+                      value={siteSettings.seo?.metaDescription || ''}
                       onChange={e => setSiteSettings({
                         ...siteSettings,
-                        contact: { ...siteSettings.contact, email: e.target.value }
+                        seo: { ...siteSettings.seo, metaDescription: e.target.value }
                       })}
                       className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                    />
+                    ></textarea>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Office Address</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">SEO Keywords (comma separated)</label>
                     <input 
                       type="text" 
-                      value={siteSettings.contact.address}
+                      value={siteSettings.seo?.keywords || ''}
                       onChange={e => setSiteSettings({
                         ...siteSettings,
-                        contact: { ...siteSettings.contact, address: e.target.value }
+                        seo: { ...siteSettings.seo, keywords: e.target.value }
                       })}
                       className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
                     />
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Section 4: Footer */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                  <Sliders className="w-4 h-4 text-slate-700" /> Footer Settings
-                </h3>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">About Text (Column 1)</label>
-                  <textarea 
-                    rows={2}
-                    value={siteSettings.footer.aboutText}
-                    onChange={e => setSiteSettings({
-                      ...siteSettings,
-                      footer: { ...siteSettings.footer, aboutText: e.target.value }
-                    })}
-                    className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                  ></textarea>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Copyright Line</label>
-                  <input 
-                    type="text" 
-                    value={siteSettings.footer.copyrightText}
-                    onChange={e => setSiteSettings({
-                      ...siteSettings,
-                      footer: { ...siteSettings.footer, copyrightText: e.target.value }
-                    })}
-                    className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                  />
-                </div>
-              </div>
+              {/* SUBTAB 3: VIDEO-STYLE HERO SLIDER */}
+              {customizerSubTab === 'slider' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Hero Slider Slides ({siteSettings.hero.slides.length})</h3>
+                      <p className="text-xs text-slate-500">Each slide has high-res background with smooth Ken-Burns video-like motion.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddSlide}
+                      className="px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold border border-blue-200 flex items-center gap-1 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add New Slide</span>
+                    </button>
+                  </div>
 
-              <div className="flex items-center gap-4 pt-4">
+                  {siteSettings.hero.slides.map((slide, idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4 relative">
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <span className="text-xs font-black uppercase text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md">
+                          Slide #{idx + 1}
+                        </span>
+                        {siteSettings.hero.slides.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSlide(idx)}
+                            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove Slide</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Slide Tag / Badge</label>
+                          <input 
+                            type="text" 
+                            value={slide.tag || ''}
+                            onChange={e => handleUpdateSlide(idx, 'tag', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-xs" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Background Image URL (Ken-Burns Motion)</label>
+                          <input 
+                            type="text" 
+                            value={slide.bgImage || ''}
+                            onChange={e => handleUpdateSlide(idx, 'bgImage', e.target.value)}
+                            placeholder="https://images.unsplash.com/..."
+                            className="w-full p-2 border rounded-lg text-xs font-mono" 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Slide Title (Top Line)</label>
+                          <input 
+                            type="text" 
+                            value={slide.title || ''}
+                            onChange={e => handleUpdateSlide(idx, 'title', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-sm" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Highlight Text (Gradient)</label>
+                          <input 
+                            type="text" 
+                            value={slide.highlight || ''}
+                            onChange={e => handleUpdateSlide(idx, 'highlight', e.target.value)}
+                            className="w-full p-2 border rounded-lg text-sm font-bold text-blue-600" 
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                        <textarea 
+                          rows={2}
+                          value={slide.description || ''}
+                          onChange={e => handleUpdateSlide(idx, 'description', e.target.value)}
+                          className="w-full p-2 border rounded-lg text-xs" 
+                        ></textarea>
+                      </div>
+
+                      <div className="grid sm:grid-cols-4 gap-3 pt-1">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Button 1 Text</label>
+                          <input type="text" value={slide.ctaText || ''} onChange={e => handleUpdateSlide(idx, 'ctaText', e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Button 1 Link</label>
+                          <input type="text" value={slide.ctaLink || ''} onChange={e => handleUpdateSlide(idx, 'ctaLink', e.target.value)} className="w-full p-1.5 border rounded-lg text-xs font-mono" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Button 2 Text</label>
+                          <input type="text" value={slide.secondaryCtaText || ''} onChange={e => handleUpdateSlide(idx, 'secondaryCtaText', e.target.value)} className="w-full p-1.5 border rounded-lg text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Button 2 Link</label>
+                          <input type="text" value={slide.secondaryCtaLink || ''} onChange={e => handleUpdateSlide(idx, 'secondaryCtaLink', e.target.value)} className="w-full p-1.5 border rounded-lg text-xs font-mono" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUBTAB 4: SERVICE CARDS */}
+              {customizerSubTab === 'services' && (
+                <div className="space-y-4">
+                  <h3 className="text-base font-bold text-slate-900">Service Solutions Cards</h3>
+                  {siteSettings.services.map((srv, idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2 font-bold text-xs uppercase text-slate-500">
+                        <span>Service #{idx + 1} ({srv.tagline})</span>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Service Title</label>
+                          <input type="text" value={srv.title} onChange={e => handleUpdateService(idx, 'title', e.target.value)} className="w-full p-2 border rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Tagline</label>
+                          <input type="text" value={srv.tagline} onChange={e => handleUpdateService(idx, 'tagline', e.target.value)} className="w-full p-2 border rounded-lg text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                        <textarea rows={2} value={srv.description} onChange={e => handleUpdateService(idx, 'description', e.target.value)} className="w-full p-2 border rounded-lg text-xs"></textarea>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Demo / Action Link</label>
+                        <input type="text" value={srv.demoLink || ''} onChange={e => handleUpdateService(idx, 'demoLink', e.target.value)} className="w-full p-2 border rounded-lg text-xs font-mono" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUBTAB 5: PRICING CARDS */}
+              {customizerSubTab === 'pricing' && (
+                <div className="space-y-4">
+                  <h3 className="text-base font-bold text-slate-900">Pricing & Packages Cards</h3>
+                  {siteSettings.pricing.map((plan, idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2 font-bold text-xs uppercase text-slate-500">
+                        <span>Plan #{idx + 1}: {plan.name}</span>
+                        <label className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={!!plan.isPopular} 
+                            onChange={e => handleUpdatePricing(idx, 'isPopular', e.target.checked)} 
+                            className="rounded"
+                          />
+                          <span>Highlight as Popular</span>
+                        </label>
+                      </div>
+                      <div className="grid sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Plan Name</label>
+                          <input type="text" value={plan.name} onChange={e => handleUpdatePricing(idx, 'name', e.target.value)} className="w-full p-2 border rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Price Text</label>
+                          <input type="text" value={plan.price} onChange={e => handleUpdatePricing(idx, 'price', e.target.value)} className="w-full p-2 border rounded-lg text-sm font-bold" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Billing Period</label>
+                          <input type="text" value={plan.period} onChange={e => handleUpdatePricing(idx, 'period', e.target.value)} className="w-full p-2 border rounded-lg text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
+                        <input type="text" value={plan.description} onChange={e => handleUpdatePricing(idx, 'description', e.target.value)} className="w-full p-2 border rounded-lg text-xs" />
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Button Text</label>
+                          <input type="text" value={plan.buttonText || ''} onChange={e => handleUpdatePricing(idx, 'buttonText', e.target.value)} className="w-full p-2 border rounded-lg text-xs" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 mb-1">Button Link / WhatsApp URL</label>
+                          <input type="text" value={plan.buttonLink || ''} onChange={e => handleUpdatePricing(idx, 'buttonLink', e.target.value)} className="w-full p-2 border rounded-lg text-xs font-mono" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* SUBTAB 6: CONTACT & SOCIALS */}
+              {customizerSubTab === 'contact' && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <Phone className="w-4 h-4 text-purple-600" /> Contact & Social Media Information
+                  </h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">WhatsApp Number (e.g. 88017XXXXXXXX)</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.contact.whatsappNumber}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, whatsappNumber: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Support Phone</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.contact.phone}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, phone: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Official Email</label>
+                      <input 
+                        type="email" 
+                        value={siteSettings.contact.email}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, email: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Office Address</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.contact.address}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, address: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Facebook Page URL</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.contact.facebookUrl || ''}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, facebookUrl: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">YouTube Channel URL</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.contact.youtubeUrl || ''}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          contact: { ...siteSettings.contact, youtubeUrl: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 font-mono text-xs" 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBTAB 7: FOOTER & LEGAL */}
+              {customizerSubTab === 'footer' && (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                    <Sliders className="w-4 h-4 text-slate-700" /> Footer Details
+                  </h3>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">About Agency (Column 1 Bio)</label>
+                    <textarea 
+                      rows={2}
+                      value={siteSettings.footer.aboutText}
+                      onChange={e => setSiteSettings({
+                        ...siteSettings,
+                        footer: { ...siteSettings.footer, aboutText: e.target.value }
+                      })}
+                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                    ></textarea>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Copyright Line</label>
+                    <input 
+                      type="text" 
+                      value={siteSettings.footer.copyrightText}
+                      onChange={e => setSiteSettings({
+                        ...siteSettings,
+                        footer: { ...siteSettings.footer, copyrightText: e.target.value }
+                      })}
+                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom Sticky Action Bar */}
+              <div className="sticky bottom-6 z-20 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border border-slate-800">
+                <span className="text-xs text-slate-300 font-medium">
+                  Changes will be published immediately to <span className="text-blue-400 font-bold">https://mahinecom.vercel.app/</span>
+                </span>
                 <button
                   type="submit"
                   disabled={savingSettings}
-                  className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-blue-500/25 flex items-center gap-2 disabled:opacity-70"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-blue-500/30 flex items-center gap-2 disabled:opacity-70"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{savingSettings ? 'Saving Settings...' : 'Save Website Settings'}</span>
+                  <span>{savingSettings ? 'Saving...' : 'Save All Website Settings'}</span>
                 </button>
               </div>
+
             </form>
           </div>
         )}
