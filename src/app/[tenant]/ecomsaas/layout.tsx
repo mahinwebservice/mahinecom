@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { ShoppingBag, LayoutTemplate, Store, LogOut, ExternalLink, Package } from 'lucide-react';
+import { ShoppingBag, Package, Settings, LayoutTemplate, Store, LogOut, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TenantEcomsaasLayout({ children }: { children: React.ReactNode }) {
@@ -119,7 +119,23 @@ export default function TenantEcomsaasLayout({ children }: { children: React.Rea
             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-sm ${pathname?.includes('/storefront') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
           >
             <LayoutTemplate className="w-4 h-4" /> 
-            <span>Storefront Builder</span>
+            <span>হোমপেজ কাস্টমাইজেশন</span>
+          </Link>
+
+          <Link 
+            href={`/${tenantId}/ecomsaas/products`} 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-sm ${pathname?.includes('/products') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <Package className="w-4 h-4" /> 
+            <span>প্রোডাক্ট ও ক্যাটাগরি</span>
+          </Link>
+
+          <Link 
+            href={`/${tenantId}/ecomsaas/settings`} 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-sm ${pathname?.includes('/settings') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <Settings className="w-4 h-4" /> 
+            <span>ওয়েবসাইট ও API সেটিংস</span>
           </Link>
 
           <div className="pt-4 mt-4 border-t border-slate-800">
