@@ -28,19 +28,44 @@ export default function TenantMerchantLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
+      // 1. Check if user is superadmin or assigned to this tenant in system_users
       const userDoc = await getDoc(doc(db, `system_users/${user.uid}`));
-      
+      let isAuthorized = false;
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         if (userData.role === 'superadmin' || userData.tenantId === tenantId) {
-          router.push(`/${tenantId}/ecomsaas/orders`);
-        } else {
-          await auth.signOut();
-          setError(`Access denied. You are not an admin for store: ${tenantId}`);
+          isAuthorized = true;
         }
+      }
+
+      // 2. Also check if tenant document has matching admin email
+      if (!isAuthorized) {
+        const tenantSnap = await getDoc(doc(db, 'tenants', tenantId));
+        if (tenantSnap.exists()) {
+          const tData = tenantSnap.data();
+          if (tData.email && tData.email.toLowerCase() === user.email?.toLowerCase()) {
+            isAuthorized = true;
+            try {
+              await setDoc(doc(db, `system_users/${user.uid}`), {
+                email: user.email,
+                role: 'admin',
+                tenantId: tenantId,
+                updatedAt: Date.now()
+              }, { merge: true });
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (isAuthorized) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('merchant_tenant', tenantId);
+        }
+        router.push(`/${tenantId}/ecomsaas/orders`);
       } else {
         await auth.signOut();
-        setError('No role found for this account.');
+        setError(`Access denied. You are not an authorized admin for store: ${tenantId}`);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to login');

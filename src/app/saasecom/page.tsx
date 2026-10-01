@@ -180,23 +180,26 @@ function MerchantLoginForm() {
         const userDocRef = doc(db, 'system_users', authUser.uid);
         const userSnap = await getDoc(userDocRef);
 
-        if (!userSnap.exists()) {
-          await setDoc(userDocRef, {
-            email: authUser.email,
-            role: 'admin',
-            tenantId: targetStoreId,
-            updatedAt: Date.now()
-          });
-        } else {
-          const uData = userSnap.data();
-          if (uData.role !== 'superadmin' && uData.tenantId !== targetStoreId) {
-            // Update to this tenant if admin
+        try {
+          if (!userSnap.exists()) {
             await setDoc(userDocRef, {
-              ...uData,
+              email: authUser.email,
+              role: 'admin',
               tenantId: targetStoreId,
               updatedAt: Date.now()
-            }, { merge: true });
+            });
+          } else {
+            const uData = userSnap.data();
+            if (uData.role !== 'superadmin' && uData.tenantId !== targetStoreId) {
+              await setDoc(userDocRef, {
+                ...uData,
+                tenantId: targetStoreId,
+                updatedAt: Date.now()
+              }, { merge: true });
+            }
           }
+        } catch (syncErr) {
+          console.warn("Could not sync system_users doc:", syncErr);
         }
 
         // Store session in localStorage for merchant

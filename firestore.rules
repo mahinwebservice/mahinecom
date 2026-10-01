@@ -2,17 +2,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isTenantAdmin(tenantId) {
+    function isSuperAdmin() {
       return request.auth != null && 
         (
-          get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.tenantId == tenantId ||
-          get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin'
+          (exists(/databases/$(database)/documents/system_users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin') ||
+          request.auth.token.email == 'admin@mahinsaas.com'
         );
     }
 
-    function isSuperAdmin() {
+    function isTenantAdmin(tenantId) {
       return request.auth != null && 
-        get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin';
+        (
+          isSuperAdmin() ||
+          (exists(/databases/$(database)/documents/system_users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.tenantId == tenantId) ||
+          (exists(/databases/$(database)/documents/tenants/$(tenantId)) &&
+           get(/databases/$(database)/documents/tenants/$(tenantId)).data.email == request.auth.token.email) ||
+          (exists(/databases/$(database)/documents/tenants/$(tenantId)/settings/general) &&
+           get(/databases/$(database)/documents/tenants/$(tenantId)/settings/general).data.email == request.auth.token.email)
+        );
     }
 
     // Platform Landing Page Settings & Leads
@@ -26,27 +35,23 @@ service cloud.firestore {
       allow read, update, delete: if isSuperAdmin();
     }
 
-    // System Users
+    // System Users: Allow users to read and update their own profile, SuperAdmin has full access
     match /system_users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
-      
-      // Allow self-registration if they are claiming a tenant where they were invited
-      allow create: if request.auth != null && request.auth.uid == userId 
-        && request.resource.data.email == request.auth.token.email
-        && get(/databases/$(database)/documents/tenants/$(request.resource.data.tenantId)/settings/general).data.email == request.auth.token.email;
-        
-      allow update, delete: if isSuperAdmin();
+      allow create, update: if request.auth != null && (
+        isSuperAdmin() || 
+        (request.auth.uid == userId && request.resource.data.role != 'superadmin')
+      );
+      allow delete: if isSuperAdmin();
     }
 
     match /tenants/{tenantId} {
-      // Allow anyone to read store info, and SuperAdmin can create/manage
+      // Store public data is readable by all (needed for storefronts and checkout)
       allow read: if true;
       allow write: if isSuperAdmin();
 
       match /settings/{docId} {
         allow read: if docId == 'general' || docId == 'homepage_layout' || docId == 'footer' || isTenantAdmin(tenantId);
-        // Only SuperAdmin can write to 'general' (which holds the admin email). 
-        // TenantAdmin can update other settings.
         allow update: if isTenantAdmin(tenantId) && docId != 'general';
         allow create, delete: if isSuperAdmin();
         allow update: if isSuperAdmin();
