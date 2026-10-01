@@ -2,15 +2,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Store } from 'lucide-react';
 
-export default function TenantAdminLogin({ params }: { params: any }) {
+export default function TenantAdminLogin() {
   const router = useRouter();
-  const tenantId = params.tenantId;
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || '';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

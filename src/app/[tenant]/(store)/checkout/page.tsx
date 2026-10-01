@@ -2,14 +2,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
-export default function CheckoutPage({ params }: { params: any }) {
+export default function CheckoutPage() {
   const router = useRouter();
-  const tenantId = params.tenantId;
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || '';
   const { items, getSubtotal, clearCart } = useCartStore();
 
   const [shippingZone, setShippingZone] = useState<'inside_city' | 'outside_city'>('inside_city');

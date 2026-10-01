@@ -63,6 +63,10 @@ export default function SuperAdminDashboard() {
 
       await setDoc(doc(db, 'tenants', newStore.subdomain), {
         id: newStore.subdomain,
+        name: newStore.storeName,
+        email: newStore.adminEmail,
+        domainType: newStore.domainType,
+        expireDate: newStore.expireDate,
         createdAt: Date.now()
       });
 
@@ -164,19 +168,33 @@ export default function SuperAdminDashboard() {
                     tenants.map(tenant => (
                       <tr key={tenant.id} className="border-b border-slate-50 hover:bg-slate-50 transition">
                         <td className="p-4">
-                          <div className="font-bold text-slate-900">{tenant.id}</div>
-                          <a href={'/' + tenant.id} target="_blank" className="text-sm text-blue-600 hover:underline">
-                            / {tenant.id}
+                          <div className="font-bold text-slate-900">{tenant.name || tenant.id}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs bg-slate-100 px-2 py-0.5 rounded font-mono text-slate-600">ID: {tenant.id}</span>
+                            <span className="text-xs text-slate-400">•</span>
+                            <span className="text-xs text-slate-500">{tenant.email || 'No email'}</span>
+                          </div>
+                          <a href={'/' + tenant.id} target="_blank" className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                            Visit Store: /{tenant.id}
                           </a>
                         </td>
                         <td className="p-4">
-                          <a 
-                            href={'/' + tenant.id + '/admin/register'}
-                            target="_blank"
-                            className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition text-sm"
-                          >
-                            Registration Link
-                          </a>
+                          <div className="flex items-center gap-2">
+                            <a 
+                              href={'/' + tenant.id + '/admin/register'}
+                              target="_blank"
+                              className="px-3 py-1.5 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition text-xs"
+                            >
+                              Invite Link
+                            </a>
+                            <a 
+                              href={'/' + tenant.id + '/admin/login'}
+                              target="_blank"
+                              className="px-3 py-1.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition text-xs"
+                            >
+                              Admin Login
+                            </a>
+                          </div>
                         </td>
                       </tr>
                     ))

@@ -2,13 +2,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LayoutTemplate, GripVertical, Plus, Save, Trash2 } from 'lucide-react';
 import type { LayoutBlock, LayoutBlockType } from '@/types';
 
-export default function StorefrontBuilder({ params }: { params: any }) {
-  const tenantId = params.tenantId;
+export default function StorefrontBuilder() {
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || '';
   const [blocks, setBlocks] = useState<LayoutBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

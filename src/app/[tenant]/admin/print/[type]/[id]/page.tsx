@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
-export default function PrintSuite({ params }: { params: { tenantId: string, type: string, id: string } }) {
-  const { tenantId, type, id } = params;
+export default function PrintSuite() {
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || '';
+  const type = (params?.type as string) || '';
+  const id = (params?.id as string) || '';
   const [data, setData] = useState<any>(null);
   const [tenantInfo, setTenantInfo] = useState<any>(null);
 

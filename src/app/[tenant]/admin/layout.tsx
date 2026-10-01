@@ -2,21 +2,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { LayoutTemplate, ShoppingBag, Package, Settings, LogOut, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
 
-export default function TenantAdminLayout({ 
-  children, 
-  params 
-}: { 
-  children: React.ReactNode, 
-  params: any 
-}) {
+export default function TenantAdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const tenantId = params.tenantId;
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || '';
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

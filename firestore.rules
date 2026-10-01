@@ -17,7 +17,7 @@ service cloud.firestore {
 
     // System Users
     match /system_users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId || isSuperAdmin();
+      allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
       
       // Allow self-registration if they are claiming a tenant where they were invited
       allow create: if request.auth != null && request.auth.uid == userId 
@@ -28,6 +28,10 @@ service cloud.firestore {
     }
 
     match /tenants/{tenantId} {
+      // Allow public read for tenant meta, SuperAdmin can create/manage
+      allow read: if true;
+      allow write: if isSuperAdmin();
+
       match /settings/{docId} {
         allow read: if docId == 'general' || docId == 'homepage_layout' || docId == 'footer' || isTenantAdmin(tenantId);
         // Only SuperAdmin can write to 'general' (which holds the admin email). 
