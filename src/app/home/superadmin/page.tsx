@@ -1,5 +1,2 @@
-import { redirect } from 'next/navigation';
-
-export default function SuperAdminRedirectPage() {
-  redirect('/mahinsaas');
-}
+// @ts-nocheck
+export { default } from '@/app/mahinsaas/page';
