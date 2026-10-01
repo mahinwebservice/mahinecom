@@ -24,7 +24,9 @@ import {
   Image as ImageIcon,
   DollarSign,
   Search,
-  Trash2
+  Trash2,
+  ShoppingBag,
+  Award
 } from 'lucide-react';
 import { defaultSettings } from '@/components/landing/AgencyLandingPage';
 
@@ -91,7 +93,12 @@ export default function SuperAdminDashboard() {
           pricing: data.pricing && data.pricing.length > 0 ? data.pricing : defaultSettings.pricing,
           demos: { ...defaultSettings.demos, ...(data.demos || {}) },
           contact: { ...defaultSettings.contact, ...(data.contact || {}) },
-          footer: { ...defaultSettings.footer, ...(data.footer || {}) }
+          footer: {
+            ...defaultSettings.footer,
+            ...(data.footer || {}),
+            col2Links: (data.footer?.col2Links && data.footer.col2Links.length > 0) ? data.footer.col2Links : defaultSettings.footer.col2Links,
+            col3Links: (data.footer?.col3Links && data.footer.col3Links.length > 0) ? data.footer.col3Links : defaultSettings.footer.col3Links
+          }
         });
       }
     } catch (error) {
@@ -147,6 +154,66 @@ export default function SuperAdminDashboard() {
     } finally {
       setIsCreating(false);
     }
+  };
+
+    const handleAddFooterCol2Link = () => {
+    setSiteSettings({
+      ...siteSettings,
+      footer: {
+        ...siteSettings.footer,
+        col2Links: [
+          ...(siteSettings.footer?.col2Links || defaultSettings.footer.col2Links),
+          { label: 'নতুন সার্ভিস বা সমাধান', url: '#services' }
+        ]
+      }
+    });
+  };
+
+  const handleUpdateFooterCol2Link = (index: number, field: string, value: string) => {
+    const updated = [...(siteSettings.footer?.col2Links || defaultSettings.footer.col2Links)];
+    updated[index] = { ...updated[index], [field]: value };
+    setSiteSettings({
+      ...siteSettings,
+      footer: { ...siteSettings.footer, col2Links: updated }
+    });
+  };
+
+  const handleRemoveFooterCol2Link = (index: number) => {
+    const updated = (siteSettings.footer?.col2Links || defaultSettings.footer.col2Links).filter((_, i) => i !== index);
+    setSiteSettings({
+      ...siteSettings,
+      footer: { ...siteSettings.footer, col2Links: updated }
+    });
+  };
+
+  const handleAddFooterCol3Link = () => {
+    setSiteSettings({
+      ...siteSettings,
+      footer: {
+        ...siteSettings.footer,
+        col3Links: [
+          ...(siteSettings.footer?.col3Links || defaultSettings.footer.col3Links),
+          { label: 'নতুন লিংক', url: '#' }
+        ]
+      }
+    });
+  };
+
+  const handleUpdateFooterCol3Link = (index: number, field: string, value: string) => {
+    const updated = [...(siteSettings.footer?.col3Links || defaultSettings.footer.col3Links)];
+    updated[index] = { ...updated[index], [field]: value };
+    setSiteSettings({
+      ...siteSettings,
+      footer: { ...siteSettings.footer, col3Links: updated }
+    });
+  };
+
+  const handleRemoveFooterCol3Link = (index: number) => {
+    const updated = (siteSettings.footer?.col3Links || defaultSettings.footer.col3Links).filter((_, i) => i !== index);
+    setSiteSettings({
+      ...siteSettings,
+      footer: { ...siteSettings.footer, col3Links: updated }
+    });
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -877,33 +944,298 @@ export default function SuperAdminDashboard() {
 
               {/* SUBTAB 7: FOOTER & LEGAL */}
               {customizerSubTab === 'footer' && (
-                <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-                    <Sliders className="w-4 h-4 text-slate-700" /> Footer Details
-                  </h3>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">About Agency (Column 1 Bio)</label>
-                    <textarea 
-                      rows={2}
-                      value={siteSettings.footer.aboutText}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        footer: { ...siteSettings.footer, aboutText: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                    ></textarea>
+                <div className="space-y-6">
+                  {/* Card 1: Column 1 Bio & Social */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                      <Sliders className="w-4 h-4 text-blue-600" /> কলাম ১: এজেন্সি বায়ো ও সোশ্যাল মিডিয়া (Bio & Social Links)
+                    </h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">এজেন্সি পরিচিতি বিবরণ (Column 1 Bio Description)</label>
+                      <textarea 
+                        rows={2}
+                        value={siteSettings.footer?.aboutText}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          footer: { ...siteSettings.footer, aboutText: e.target.value }
+                        })}
+                        className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
+                      ></textarea>
+                    </div>
+                    <div className="grid sm:grid-cols-3 gap-3 pt-1">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">ফেসবুক পেজ লিংক (Facebook URL)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.contact?.facebookUrl}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, facebookUrl: e.target.value }
+                          })}
+                          className="w-full p-2 border rounded-lg text-xs" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">ইউটিউব চ্যানেল লিংক (YouTube URL)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.contact?.youtubeUrl}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, youtubeUrl: e.target.value }
+                          })}
+                          className="w-full p-2 border rounded-lg text-xs" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">হোয়াটসঅ্যাপ চ্যাট লিংক (WhatsApp Number)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.contact?.whatsappNumber}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, whatsappNumber: e.target.value }
+                          })}
+                          className="w-full p-2 border rounded-lg text-xs" 
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Copyright Line</label>
-                    <input 
-                      type="text" 
-                      value={siteSettings.footer.copyrightText}
-                      onChange={e => setSiteSettings({
-                        ...siteSettings,
-                        footer: { ...siteSettings.footer, copyrightText: e.target.value }
-                      })}
-                      className="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500" 
-                    />
+
+                  {/* Card 2: Column 2 Solutions / Services */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <ShoppingBag className="w-4 h-4 text-emerald-600" /> কলাম ২: সফটওয়্যার সেবাসমূহ (Services / Solutions Links)
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">ফুটারের ২য় কলামের হেডিং ও প্রতিটি সার্ভিস লিংক ইচ্ছামত এডিট বা যোগ করুন</p>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={handleAddFooterCol2Link}
+                        className="px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-xl transition border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> + নতুন সার্ভিস লিংক যোগ করুন
+                      </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">কলাম ২ শিরোনাম (Column 2 Title)</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.footer?.col2Title || 'সফটওয়্যার সেবাসমূহ'}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          footer: { ...siteSettings.footer, col2Title: e.target.value }
+                        })}
+                        placeholder="সফটওয়্যার সেবাসমূহ"
+                        className="w-full sm:w-1/2 p-2.5 border rounded-lg text-sm font-bold text-slate-800" 
+                      />
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="grid grid-cols-12 gap-2 text-[11px] font-bold uppercase text-slate-400 px-1">
+                        <span className="col-span-6">সার্ভিসের নাম / টেক্সট (Label)</span>
+                        <span className="col-span-5">লিংক বা হ্যাশট্যাগ (URL / Anchor)</span>
+                        <span className="col-span-1 text-right">ডিলিট</span>
+                      </div>
+                      {(siteSettings.footer?.col2Links || defaultSettings.footer.col2Links).map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                          <div className="col-span-6">
+                            <input 
+                              type="text" 
+                              value={item.label}
+                              onChange={e => handleUpdateFooterCol2Link(idx, 'label', e.target.value)}
+                              placeholder="সার্ভিসের নাম"
+                              className="w-full p-2 bg-white border rounded-lg text-xs font-medium text-slate-800" 
+                            />
+                          </div>
+                          <div className="col-span-5">
+                            <input 
+                              type="text" 
+                              value={item.url}
+                              onChange={e => handleUpdateFooterCol2Link(idx, 'url', e.target.value)}
+                              placeholder="#services বা /url"
+                              className="w-full p-2 bg-white border rounded-lg text-xs text-slate-600 font-mono" 
+                            />
+                          </div>
+                          <div className="col-span-1 text-right">
+                            <button 
+                              type="button" 
+                              onClick={() => handleRemoveFooterCol2Link(idx)}
+                              title="Delete Link"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 3: Column 3 Important / Quick Links */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-indigo-600" /> কলাম ৩: গুরুত্বপূর্ণ লিংক (Quick Links)
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">ফুটারের ৩য় কলামের হেডিং ও যেকোনো গুরুত্বপূর্ণ পেজ বা লগিন লিংক কাস্টমাইজ করুন</p>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={handleAddFooterCol3Link}
+                        className="px-3.5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs rounded-xl transition border border-indigo-200 flex items-center gap-1.5 self-start sm:self-auto"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> + নতুন গুরুত্বপূর্ণ লিংক যোগ করুন
+                      </button>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">কলাম ৩ শিরোনাম (Column 3 Title)</label>
+                      <input 
+                        type="text" 
+                        value={siteSettings.footer?.col3Title || 'গুরুত্বপূর্ণ লিংক'}
+                        onChange={e => setSiteSettings({
+                          ...siteSettings,
+                          footer: { ...siteSettings.footer, col3Title: e.target.value }
+                        })}
+                        placeholder="গুরুত্বপূর্ণ লিংক"
+                        className="w-full sm:w-1/2 p-2.5 border rounded-lg text-sm font-bold text-slate-800" 
+                      />
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div className="grid grid-cols-12 gap-2 text-[11px] font-bold uppercase text-slate-400 px-1">
+                        <span className="col-span-6">লিংকের নাম / টেক্সট (Label)</span>
+                        <span className="col-span-5">ট্রেসিং লিংক (URL / Route)</span>
+                        <span className="col-span-1 text-right">ডিলিট</span>
+                      </div>
+                      {(siteSettings.footer?.col3Links || defaultSettings.footer.col3Links).map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+                          <div className="col-span-6">
+                            <input 
+                              type="text" 
+                              value={item.label}
+                              onChange={e => handleUpdateFooterCol3Link(idx, 'label', e.target.value)}
+                              placeholder="যেমন: মার্চেন্ট লগিন (/ecomsaas)"
+                              className="w-full p-2 bg-white border rounded-lg text-xs font-medium text-slate-800" 
+                            />
+                          </div>
+                          <div className="col-span-5">
+                            <input 
+                              type="text" 
+                              value={item.url}
+                              onChange={e => handleUpdateFooterCol3Link(idx, 'url', e.target.value)}
+                              placeholder="/store1/ecomsaas বা #demos"
+                              className="w-full p-2 bg-white border rounded-lg text-xs text-slate-600 font-mono" 
+                            />
+                          </div>
+                          <div className="col-span-1 text-right">
+                            <button 
+                              type="button" 
+                              onClick={() => handleRemoveFooterCol3Link(idx)}
+                              title="Delete Link"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Column 4 Contact Details */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                      <Phone className="w-4 h-4 text-cyan-600" /> কলাম ৪: অফিস ও যোগাযোগ তথ্য (Column 4 Contact Info)
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">কলাম ৪ শিরোনাম (Column 4 Title)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.footer?.col4Title || 'অফিস ও যোগাযোগ'}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            footer: { ...siteSettings.footer, col4Title: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm font-bold text-slate-800" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">অফিস ঠিকানা (Address)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.contact?.address}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, address: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">হেল্পলাইন ফোন নম্বর</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.contact?.phone}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, phone: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">সাপোর্ট ইমেইল</label>
+                        <input 
+                          type="email" 
+                          value={siteSettings.contact?.email}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            contact: { ...siteSettings.contact, email: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Bottom Bar & Copyright */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
+                      <Award className="w-4 h-4 text-purple-600" /> ফুটার বটম বার ও ক্রেডিট লাইন (Bottom Bar & Credits)
+                    </h3>
+                    <div className="grid sm:grid-cols-3 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">কপিরাইট লাইন (Copyright Text)</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.footer?.copyrightText}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            footer: { ...siteSettings.footer, copyrightText: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Powered By ব্র্যান্ড নাম</label>
+                        <input 
+                          type="text" 
+                          value={siteSettings.footer?.poweredBy || 'Mahin Web Services'}
+                          onChange={e => setSiteSettings({
+                            ...siteSettings,
+                            footer: { ...siteSettings.footer, poweredBy: e.target.value }
+                          })}
+                          className="w-full p-2.5 border rounded-lg text-sm font-semibold" 
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

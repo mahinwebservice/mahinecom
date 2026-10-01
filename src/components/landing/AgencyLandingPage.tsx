@@ -191,7 +191,25 @@ export const defaultSettings = {
   },
   footer: {
     aboutText: 'আমরা আধুনিক ক্লাউড টেকনোলজি ব্যবহার করে ব্যবসা ও শিক্ষাপ্রতিষ্ঠানের জন্য বিশ্বমানের ডিজিটাল সমাধান এবং সফটওয়্যার সরবরাহ করি।',
-    copyrightText: '© ' + new Date().getFullYear() + ' Mahin Web Services. All rights reserved.'
+    copyrightText: '© ' + new Date().getFullYear() + ' Mahin Web Services. All rights reserved.',
+    poweredBy: 'Mahin Web Services',
+    poweredByLink: '/',
+    col2Title: 'সফটওয়্যার সেবাসমূহ',
+    col2Links: [
+      { label: 'মাল্টি-টেন্যান্ট ই-কমার্স SaaS', url: '#services' },
+      { label: 'স্মার্ট স্কুল ম্যানেজমেন্ট ERP', url: '#services' },
+      { label: 'রিটেইল ও হোলসেল POS সিস্টেম', url: '#services' },
+      { label: 'কাস্টম ওয়েব ও ক্লাউড অ্যাপ', url: '#services' },
+      { label: 'কুরিয়ার ও পেমেন্ট গেটওয়ে সেটআপ', url: '#services' }
+    ],
+    col3Title: 'গুরুত্বপূর্ণ লিংক',
+    col3Links: [
+      { label: 'লাইভ প্রজেক্ট ডেমো', url: '#demos' },
+      { label: 'প্যাকেজ ও বাজেট', url: '#pricing' },
+      { label: 'মার্চেন্ট লগিন (/ecomsaas)', url: '/store1/ecomsaas' },
+      { label: 'সুপার এডমিন লগিন (/mahinsaas)', url: '/mahinsaas' }
+    ],
+    col4Title: 'অফিস ও যোগাযোগ'
   }
 };
 
@@ -221,7 +239,12 @@ export function AgencyLandingPage() {
             pricing: data.pricing && data.pricing.length > 0 ? data.pricing : defaultSettings.pricing,
             demos: { ...defaultSettings.demos, ...(data.demos || {}) },
             contact: { ...defaultSettings.contact, ...(data.contact || {}) },
-            footer: { ...defaultSettings.footer, ...(data.footer || {}) }
+            footer: {
+              ...defaultSettings.footer,
+              ...(data.footer || {}),
+              col2Links: (data.footer?.col2Links && data.footer.col2Links.length > 0) ? data.footer.col2Links : defaultSettings.footer.col2Links,
+              col3Links: (data.footer?.col3Links && data.footer.col3Links.length > 0) ? data.footer.col3Links : defaultSettings.footer.col3Links
+            }
           });
         }
       } catch (err) {
@@ -846,16 +869,16 @@ export function AgencyLandingPage() {
                 <span className="text-base font-black text-white">{settings.branding.agencyName}</span>
               </div>
               <p className="text-slate-400 text-xs leading-relaxed mb-5">
-                {settings.footer.aboutText}
+                {settings.footer?.aboutText}
               </p>
               <div className="flex items-center gap-2.5">
-                <a href={settings.contact.facebookUrl} target="_blank" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500 transition text-[11px] font-bold">
+                <a href={settings.contact.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-blue-400 hover:border-blue-500 transition text-[11px] font-bold">
                   FB
                 </a>
-                <a href={settings.contact.youtubeUrl} target="_blank" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-red-400 hover:border-red-500 transition text-[11px] font-bold">
+                <a href={settings.contact.youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-red-400 hover:border-red-500 transition text-[11px] font-bold">
                   YT
                 </a>
-                <a href={`https://wa.me/${settings.contact.whatsappNumber}`} target="_blank" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500 transition text-[11px] font-bold">
+                <a href={`https://wa.me/${settings.contact.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:border-emerald-500 transition text-[11px] font-bold">
                   WA
                 </a>
               </div>
@@ -863,30 +886,41 @@ export function AgencyLandingPage() {
 
             {/* Col 2: Solutions */}
             <div>
-              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">সফটওয়্যার সেবাসমূহ</h4>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">
+                {settings.footer?.col2Title || 'সফটওয়্যার সেবাসমূহ'}
+              </h4>
               <ul className="space-y-1.5 text-xs text-slate-400">
-                <li><a href="#services" className="hover:text-white transition">মাল্টি-টেন্যান্ট ই-কমার্স SaaS</a></li>
-                <li><a href="#services" className="hover:text-white transition">স্মার্ট স্কুল ম্যানেজমেন্ট ERP</a></li>
-                <li><a href="#services" className="hover:text-white transition">রিটেইল ও হোলসেল POS সিস্টেম</a></li>
-                <li><a href="#services" className="hover:text-white transition">কাস্টম ওয়েব ও ক্লাউড অ্যাপ</a></li>
-                <li><a href="#services" className="hover:text-white transition">কুরিয়ার ও পেমেন্ট গেটওয়ে সেটআপ</a></li>
+                {(settings.footer?.col2Links || defaultSettings.footer.col2Links).map((item, idx) => (
+                  <li key={idx}>
+                    <a href={item.url} className="hover:text-white transition">
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Col 3: Quick Links */}
             <div>
-              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">গুরুত্বপূর্ণ লিংক</h4>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">
+                {settings.footer?.col3Title || 'গুরুত্বপূর্ণ লিংক'}
+              </h4>
               <ul className="space-y-1.5 text-xs text-slate-400">
-                <li><a href="#demos" className="hover:text-white transition">লাইভ প্রজেক্ট ডেমো</a></li>
-                <li><a href="#pricing" className="hover:text-white transition">প্যাকেজ ও বাজেট</a></li>
-                <li><Link href="/store1/ecomsaas" className="hover:text-blue-400 transition">মার্চেন্ট লগিন (/ecomsaas)</Link></li>
-                <li><Link href="/mahinsaas" className="hover:text-red-400 transition">সুপার এডমিন লগিন (/mahinsaas)</Link></li>
+                {(settings.footer?.col3Links || defaultSettings.footer.col3Links).map((item, idx) => (
+                  <li key={idx}>
+                    <Link href={item.url} className="hover:text-blue-400 transition">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
             {/* Col 4: Contact */}
             <div>
-              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">অফিস ও যোগাযোগ</h4>
+              <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-3">
+                {settings.footer?.col4Title || 'অফিস ও যোগাযোগ'}
+              </h4>
               <ul className="space-y-2 text-xs text-slate-400">
                 <li className="flex items-start gap-2">
                   <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
@@ -905,9 +939,9 @@ export function AgencyLandingPage() {
           </div>
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <p>{settings.footer.copyrightText}</p>
+            <p>{settings.footer?.copyrightText}</p>
             <p className="flex items-center gap-1">
-              Powered by <span className="text-slate-300 font-bold">Mahin Web Services</span>
+              Powered by <a href={settings.footer?.poweredByLink || '/'} className="text-slate-300 font-bold hover:text-white transition">{settings.footer?.poweredBy || 'Mahin Web Services'}</a>
             </p>
           </div>
         </div>
