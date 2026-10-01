@@ -21,21 +21,22 @@ export function middleware(req: NextRequest) {
     currentHost === 'mahinsaas.firebaseapp.com';
 
   if (isRootDomain) {
-    // 1. Root Super Admin paths (/superadmin or /mahinsaas)
+    // 1. Root landing page -> Serve root src/app/page.tsx directly
+    if (url.pathname === '/') {
+      return NextResponse.next();
+    }
+
+    // 2. Root Super Admin paths (/superadmin)
     if (url.pathname === '/superadmin' || url.pathname.startsWith('/superadmin/')) {
       return NextResponse.rewrite(new URL('/home' + url.pathname, req.url));
     }
 
+    // 3. /mahinsaas root login
     if (url.pathname === '/mahinsaas') {
-      return NextResponse.rewrite(new URL('/mahinsaas', req.url));
+      return NextResponse.next();
     }
 
-    // 2. Root landing page
-    if (url.pathname === '/') {
-      return NextResponse.rewrite(new URL('/home', req.url));
-    }
-
-    // 3. Otherwise (like /store1/ecomsaas or /store1/mahinsaas), let Next.js match app/[tenant]/...
+    // 4. Otherwise (like /store1, /store1/ecomsaas, /store1/mahinsaas), let Next.js match app/[tenant]/...
     return NextResponse.next();
   }
 
