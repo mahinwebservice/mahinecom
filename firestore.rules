@@ -15,6 +15,17 @@ service cloud.firestore {
         get(/databases/$(database)/documents/system_users/$(request.auth.uid)).data.role == 'superadmin';
     }
 
+    // Platform Landing Page Settings & Leads
+    match /platform_settings/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
     // System Users
     match /system_users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
@@ -28,7 +39,7 @@ service cloud.firestore {
     }
 
     match /tenants/{tenantId} {
-      // Allow public read for tenant meta, SuperAdmin can create/manage
+      // Allow anyone to read store info, and SuperAdmin can create/manage
       allow read: if true;
       allow write: if isSuperAdmin();
 

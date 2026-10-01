@@ -1,5 +1,5 @@
 import { AgencyLandingPage } from "@/components/landing/AgencyLandingPage";
 
-export default function Home() {
+export default function HomePage() {
   return <AgencyLandingPage />;
 }
