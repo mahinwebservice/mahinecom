@@ -49,21 +49,128 @@ export default function SingleProductPage() {
     const fetchProductData = async () => {
       setLoading(true);
       try {
-        // 1. Fetch Product
+        // 1. Fetch Store Settings for Store Name
+        const genSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/general`));
+        const storeName = genSnap.exists() ? (genSnap.data().businessName || tenantId.toUpperCase()) : tenantId.toUpperCase();
+        setStoreSettings(genSnap.exists() ? genSnap.data() : null);
+
+        // 2. Fetch Product from Firestore
+        let pData: any = null;
         const prodSnap = await getDoc(doc(db, `tenants/${tenantId}/products/${productId}`));
         if (prodSnap.exists()) {
-          const pData: any = { id: prodSnap.id, ...(prodSnap.data() as any) };
+          pData = { id: prodSnap.id, ...(prodSnap.data() as any) };
+        } else {
+          // Fallback to match demo/sample products if store has default items
+          const demoProducts = [
+            {
+              id: 'sample-1',
+              title: 'আল্ট্রা স্লিম স্মার্টওয়াচ সিরিজ ৯ (AMOLED HD Display)',
+              category: 'স্মার্ট গ্যাজেটস',
+              brand: 'ApexTech',
+              sku: 'APX-9001',
+              regularPrice: 3800,
+              salePrice: 2850,
+              stock: 45,
+              images: [
+                'https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80',
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: '২৫% ছাড়',
+              shortDesc: 'প্রিমিয়াম AMOLED HD ডিসপ্লে, ব্লুটুথ কলিং, হেলথ ও স্লিপ ট্র্যাকিং এবং ৪০ ঘণ্টা নন-স্টপ ব্যাটারি ব্যাকআপ।',
+              longDesc: 'স্মার্টওয়াচ সিরিজ ৯ একটি অত্যাধুনিক পরিধেয় প্রযুক্তি। এতে রয়েছে আল্ট্রা-শার্প উজ্জ্বল ডিসপ্লে, আইপি৬৮ ওয়াটার রেজিস্ট্যান্স, এবং শতাধিক স্পোর্টস মোড। দৈনিক ব্যবহারের পাশাপাশি ফিটনেস ট্র্যাকিংয়ে এটি আপনার নির্ভরযোগ্য সঙ্গী।'
+            },
+            {
+              id: 'sample-2',
+              title: 'নয়েজ ক্যানসেলিং ওয়্যারলেস ব্লুটুথ হেডফোন প্রো',
+              category: 'স্মার্ট গ্যাজেটস',
+              brand: 'SonicWave',
+              sku: 'SNW-2040',
+              regularPrice: 4500,
+              salePrice: 3200,
+              stock: 30,
+              images: [
+                'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: 'বেস্টসেলার',
+              shortDesc: 'অ্যাক্টিভ নয়েজ ক্যান্সেলেশন (ANC) ও ডিপ মেগা বেস স্টুডিও সাউন্ড কোয়ালিটি।',
+              longDesc: 'উচ্চমানের মিউজিক ও নয়েজ-ফ্রি কলিংয়ের জন্য ডিজাইন করা হয়েছে এই হেডফোনটি। দীর্ঘ ৩০ ঘণ্টার প্লে-টাইম এবং ফাস্ট চার্জিং সুবিধা।'
+            },
+            {
+              id: 'sample-3',
+              title: 'প্রিমিয়াম জেনুইন লেদার ওয়ালেট ও বেল্ট এক্সক্লুসিভ কম্বো',
+              category: 'ফ্যাশন & ক্লথিং',
+              brand: 'Royale',
+              sku: 'RYL-3310',
+              regularPrice: 2200,
+              salePrice: 1550,
+              stock: 60,
+              images: [
+                'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: 'হট ডিল',
+              shortDesc: '১০০% আসল ফুল-গ্রেইন চামড়ার এক্সক্লুসিভ পুরুষদের গিফট বক্স কম্বো।',
+              longDesc: 'হ্যান্ডক্রাফটেড ফিনিশিং, নিখুঁত স্টিচিং এবং টেকসই লেদার দিয়ে তৈরি। প্রতিদিনের ব্যবহারের জন্য অত্যন্ত ক্লাসিক ও মার্জিত।'
+            },
+            {
+              id: 'sample-4',
+              title: 'এয়ার কুশন লাইটওয়েট রানিং স্নিকার্স স্পোর্টস শু',
+              category: 'জুতা ও স্নিকার্স',
+              brand: 'Velocity',
+              sku: 'VEL-4402',
+              regularPrice: 3200,
+              salePrice: 2400,
+              stock: 25,
+              images: [
+                'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: 'জনপ্রিয়',
+              shortDesc: 'দৌড়ানো ও ক্যাজুয়াল ব্যবহারের জন্য সুপার কমফোর্ট ও লাইটওয়েট স্পোর্টস শু।',
+              longDesc: 'শ্বাসপ্রশ্বাস উপযোগী মেশ ফেব্রিক এবং শক-অ্যাবজরবিং এয়ার কুশন সোলের সমন্বয়ে তৈরি। পায়ের আরাম নিশ্চিত করে দীর্ঘক্ষণ হাঁটা বা দৌড়ানোর জন্য এটি আদর্শ।'
+            },
+            {
+              id: 'sample-5',
+              title: 'ক্লাসিক ক্রোনোগ্রাফ ওয়াটারপ্রুফ রিস্ট ওয়াচ ফর মেন',
+              category: 'লাক্সারি ঘড়ি',
+              brand: 'Chronos',
+              sku: 'CHR-5509',
+              regularPrice: 5200,
+              salePrice: 3950,
+              stock: 18,
+              images: [
+                'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: 'নিউ',
+              shortDesc: 'স্টেইনলেস স্টিল ও ওয়াটার রেজিস্ট্যান্ট ক্লাসিক লাক্সারি রিস্ট ওয়াচ।',
+              longDesc: 'জাপানিজ কোয়ার্টজ মুভমেন্ট, স্ক্র্যাচ-প্রুফ স্যাফায়ার গ্লাস এবং ওয়াটারপ্রুফ বডি। অফিসিয়াল ও ক্যাজুয়াল উভয় অনুষ্ঠানে পরার উপযোগী।'
+            },
+            {
+              id: 'sample-6',
+              title: 'মিনি পোর্টেবল ব্লুটুথ স্পিকার (হেভি মেগা বেস)',
+              category: 'স্মার্ট গ্যাজেটস',
+              brand: 'JBL Style',
+              sku: 'JBL-6601',
+              regularPrice: 1800,
+              salePrice: 1250,
+              stock: 40,
+              images: [
+                'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=600&q=80'
+              ],
+              badge: 'অফার',
+              shortDesc: 'ক্রিস্টাল ক্লিয়ার ৩৬০ ডিগ্রি স্টেরিও সাউন্ড ও ওয়াটারপ্রুফ পোর্টেবল আউটডোর স্পিকার।',
+              longDesc: 'ছোট আকারের হলেও অত্যন্ত পাওয়ারফুল বাস ও সাউন্ড আউটপুট প্রদান করে। ব্লুটুথ ৫.৩ সংযোগ, ইউএসবি ও টিএফ কার্ড সাপোর্টসহ দীর্ঘ ১২ ঘণ্টা ব্যাটারি ব্যাকআপ।'
+            }
+          ];
+
+          pData = demoProducts.find(p => p.id === productId) || null;
+        }
+
+        if (pData) {
           setProduct(pData);
           if (pData.images && pData.images.length > 0) {
             setActiveImage(pData.images[0]);
           } else {
             setActiveImage('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80');
           }
-
-          // 2. Fetch Store Settings for Store Name
-          const genSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/general`));
-          const storeName = genSnap.exists() ? (genSnap.data().businessName || tenantId.toUpperCase()) : tenantId.toUpperCase();
-          setStoreSettings(genSnap.exists() ? genSnap.data() : null);
 
           // Update Browser Document Title with Product Title!
           document.title = `${pData.title} | ${storeName}`;
