@@ -9,6 +9,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
   Settings, 
   Save,
+  Truck,
   Upload, 
   Globe, 
   Shield, 
@@ -34,7 +35,7 @@ export default function TenantSettingsPage() {
   const params = useParams();
   const tenantId = (params?.tenant as string) || '';
 
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'sms' | 'payments' | 'cloudinary' | 'compliance'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'sms' | 'payments' | 'cloudinary' | 'compliance' | 'courier'>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
@@ -143,6 +144,24 @@ export default function TenantSettingsPage() {
       binNumber: '',
       tradeLicenseNo: '',
       displayOnFooter: true
+    },
+
+    // 7. Courier API Settings
+    courier: {
+      steadfast: {
+        enabled: true,
+        apiKey: '',
+        secretKey: '',
+        baseUrl: 'https://portal.packzy.com/api/v1'
+      },
+      pathao: {
+        enabled: false,
+        clientId: '',
+        clientSecret: '',
+        username: '',
+        password: '',
+        storeId: ''
+      }
     }
   });
 
@@ -170,7 +189,8 @@ export default function TenantSettingsPage() {
               manualNagad: { ...prev.payments.manualNagad, ...(data.payments?.manualNagad || {}) }
             },
             cloudinary: { ...prev.cloudinary, ...(data.cloudinary || {}) },
-            compliance: { ...prev.compliance, ...(data.compliance || {}) }
+            compliance: { ...prev.compliance, ...(data.compliance || {}) },
+            courier: { ...prev.courier, ...(data.courier || {}) }
           }));
         }
       } catch (err) {
@@ -261,7 +281,8 @@ export default function TenantSettingsPage() {
           { id: 'sms', label: '৩. বাল্ক এসএমএস (SMS)', icon: MessageSquare },
           { id: 'payments', label: '৪. পেমেন্ট গেটওয়ে', icon: CreditCard },
           { id: 'cloudinary', label: '৫. ক্লাউডিনারি ইমেজ', icon: ImageIcon },
-          { id: 'compliance', label: '৬. ভ্যাট / DBID / BIN', icon: Award }
+          { id: 'compliance', label: '৬. ভ্যাট / DBID / BIN', icon: Award },
+          { id: 'courier', label: '৭. কুরিয়ার API (SteadFast & Pathao)', icon: Truck }
         ].map(tab => (
           <button
             key={tab.id}
@@ -1060,6 +1081,217 @@ export default function TenantSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Tab 7: Courier API Settings (SteadFast & Pathao) */}
+      {activeTab === 'courier' && (
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs space-y-8">
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">কুরিয়ার সার্ভিস API কনফিগারেশন</h2>
+              <p className="text-xs text-slate-500">অর্ডারসমূহ ১-ক্লিকে সরাসরি SteadFast ও Pathao কুরিয়ারে বুকিং করার জন্য API তথ্য দিন</p>
+            </div>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
+              SteadFast & Pathao Supported
+            </span>
+          </div>
+
+          {/* 1. SteadFast Courier API */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-600 text-white font-black flex items-center justify-center text-sm shadow-md">
+                  SF
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">SteadFast Courier (স্টেডফাস্ট কুরিয়ার)</h3>
+                  <p className="text-xs text-slate-500">সারাদেশে ক্যাশ অন ডেলিভারি ও দ্রুত পার্সেল পিকআপ</p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-700">
+                <input 
+                  type="checkbox"
+                  checked={settings.courier?.steadfast?.enabled ?? true}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      steadfast: { ...settings.courier?.steadfast, enabled: e.target.checked }
+                    }
+                  })}
+                  className="w-4 h-4 text-orange-600 rounded"
+                />
+                <span>SteadFast সক্রিয় রাখুন</span>
+              </label>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">SteadFast API Key *</label>
+                <input 
+                  type="text"
+                  value={settings.courier?.steadfast?.apiKey || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      steadfast: { ...settings.courier?.steadfast, apiKey: e.target.value }
+                    }
+                  })}
+                  placeholder="e.g. your_steadfast_api_key"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">SteadFast Secret Key *</label>
+                <input 
+                  type="password"
+                  value={settings.courier?.steadfast?.secretKey || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      steadfast: { ...settings.courier?.steadfast, secretKey: e.target.value }
+                    }
+                  })}
+                  placeholder="••••••••••••••••"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1">
+              <span>স্টেডফাস্ট মার্চেন্ট প্যানেল: <a href="https://portal.steadfast.com.bd" target="_blank" rel="noreferrer" className="text-orange-600 font-bold hover:underline">portal.steadfast.com.bd</a></span>
+              <span className="text-slate-400">Settings &gt; API Credentials থেকে Key সংগ্রহ করুন</span>
+            </div>
+          </div>
+
+          {/* 2. Pathao Courier API */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-600 text-white font-black flex items-center justify-center text-sm shadow-md">
+                  PT
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Pathao Courier (পাঠাও কুরিয়ার)</h3>
+                  <p className="text-xs text-slate-500">অন-ডিমান্ড ও এক্সপ্রেস কুরিয়ার হোম ডেলিভারি</p>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-700">
+                <input 
+                  type="checkbox"
+                  checked={settings.courier?.pathao?.enabled ?? false}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, enabled: e.target.checked }
+                    }
+                  })}
+                  className="w-4 h-4 text-red-600 rounded"
+                />
+                <span>Pathao সক্রিয় রাখুন</span>
+              </label>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Client ID</label>
+                <input 
+                  type="text"
+                  value={settings.courier?.pathao?.clientId || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, clientId: e.target.value }
+                    }
+                  })}
+                  placeholder="Pathao Client ID"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Client Secret</label>
+                <input 
+                  type="password"
+                  value={settings.courier?.pathao?.clientSecret || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, clientSecret: e.target.value }
+                    }
+                  })}
+                  placeholder="••••••••••••••••"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Pathao Registered Email / Username</label>
+                <input 
+                  type="email"
+                  value={settings.courier?.pathao?.username || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, username: e.target.value }
+                    }
+                  })}
+                  placeholder="merchant@store.com"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Password</label>
+                <input 
+                  type="password"
+                  value={settings.courier?.pathao?.password || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, password: e.target.value }
+                    }
+                  })}
+                  placeholder="••••••••••••••••"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Pathao Store ID</label>
+                <input 
+                  type="text"
+                  value={settings.courier?.pathao?.storeId || ''}
+                  onChange={e => setSettings({
+                    ...settings,
+                    courier: {
+                      ...settings.courier,
+                      pathao: { ...settings.courier?.pathao, storeId: e.target.value }
+                    }
+                  })}
+                  placeholder="e.g. 12948"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1">
+              <span>পাঠাও মার্চেন্ট পোর্টাল: <a href="https://merchant.pathao.com" target="_blank" rel="noreferrer" className="text-red-600 font-bold hover:underline">merchant.pathao.com</a></span>
+              <span className="text-slate-400">Developer Settings থেকে Credentials তৈরি করুন</span>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
