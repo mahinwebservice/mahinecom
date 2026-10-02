@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { BANGLADESH_DISTRICTS, District, DEFAULT_DELIVERY_FEE, DEFAULT_DHAKA_FEE } from '@/lib/constants/districts';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -28,14 +29,17 @@ import {
   MapPin, 
   Sparkles,
   ExternalLink,
-  DollarSign
+  DollarSign,
+  Plus,
+  Search,
+  Trash2
 } from 'lucide-react';
 
 export default function TenantSettingsPage() {
   const params = useParams();
   const tenantId = (params?.tenant as string) || '';
 
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'sms' | 'payments' | 'cloudinary' | 'compliance' | 'courier'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'sms' | 'payments' | 'cloudinary' | 'compliance' | 'courier' | 'delivery'>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
@@ -54,6 +58,15 @@ export default function TenantSettingsPage() {
     }
   };
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [showAddDistrictForm, setShowAddDistrictForm] = useState(false);
+  const [newDistrict, setNewDistrict] = useState({
+    nameBn: '',
+    nameEn: '',
+    division: 'ঢাকা',
+    deliveryFee: 120
+  });
+
 
   // Settings State
   const [settings, setSettings] = useState({
@@ -146,6 +159,13 @@ export default function TenantSettingsPage() {
       displayOnFooter: true
     },
 
+    
+    // 8. District & Shipping Settings
+    delivery: {
+      defaultDeliveryFee: 120,
+      insideDhakaFee: 60,
+      districts: [] as any[]
+    },
     // 7. Courier API Settings
     courier: {
       steadfast: {
@@ -190,7 +210,12 @@ export default function TenantSettingsPage() {
             },
             cloudinary: { ...prev.cloudinary, ...(data.cloudinary || {}) },
             compliance: { ...prev.compliance, ...(data.compliance || {}) },
-            courier: { ...prev.courier, ...(data.courier || {}) }
+            courier: { ...prev.courier, ...(data.courier || {}) },
+            delivery: {
+              defaultDeliveryFee: data.delivery?.defaultDeliveryFee ?? 120,
+              insideDhakaFee: data.delivery?.insideDhakaFee ?? 60,
+              districts: data.delivery?.districts || []
+            }
           }));
         }
       } catch (err) {
@@ -282,7 +307,8 @@ export default function TenantSettingsPage() {
           { id: 'payments', label: '৪. পেমেন্ট গেটওয়ে', icon: CreditCard },
           { id: 'cloudinary', label: '৫. ক্লাউডিনারি ইমেজ', icon: ImageIcon },
           { id: 'compliance', label: '৬. ভ্যাট / DBID / BIN', icon: Award },
-          { id: 'courier', label: '৭. কুরিয়ার API (SteadFast & Pathao)', icon: Truck }
+          { id: 'courier', label: '৭. কুরিয়ার API (SteadFast & Pathao)', icon: Truck },
+          { id: 'delivery', label: '৮. জেলা ও শিপিং চার্জ', icon: MapPin }
         ].map(tab => (
           <button
             key={tab.id}
@@ -1287,6 +1313,385 @@ export default function TenantSettingsPage() {
             <div className="text-[11px] text-slate-500 flex items-center justify-between pt-1">
               <span>পাঠাও মার্চেন্ট পোর্টাল: <a href="https://merchant.pathao.com" target="_blank" rel="noreferrer" className="text-red-600 font-bold hover:underline">merchant.pathao.com</a></span>
               <span className="text-slate-400">Developer Settings থেকে Credentials তৈরি করুন</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Tab 8: District & Shipping Charges */}
+      {activeTab === 'delivery' && (
+        <div className="space-y-6">
+          {/* 1. Global / Default Delivery Rates */}
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs space-y-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+                <span>ডিফল্ট শিপিং চার্জ নির্ধারণ</span>
+                <span className="text-xs font-normal text-slate-500">সকল জেলার জন্য প্রাথমিক চার্জ</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-2">
+                যদি কোনো নির্দিষ্ট জেলার জন্য আলাদা শিপিং চার্জ নির্ধারণ করা না থাকে, তবে ক্রেতার চেকআউটে স্বয়ংক্রিয়ভাবে ডিফল্ট শিপিং চার্জ যুক্ত হবে।
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                  ডিফল্ট শিপিং চার্জ (টাকা)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-slate-500 font-bold">৳</span>
+                  <input
+                    type="number"
+                    value={settings.delivery?.defaultDeliveryFee ?? 120}
+                    onChange={e => setSettings({
+                      ...settings,
+                      delivery: {
+                        ...settings.delivery,
+                        defaultDeliveryFee: Number(e.target.value) || 0
+                      }
+                    })}
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="120"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  * সাধারণত ঢাকার বাহিরের বা অন্যান্য সকল সাধারণ জেলার জন্য (যেমন: ৳১২০)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
+                  ঢাকা সিটির ভেতরে ডেলিভারি চার্জ (টাকা)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-slate-500 font-bold">৳</span>
+                  <input
+                    type="number"
+                    value={settings.delivery?.insideDhakaFee ?? 60}
+                    onChange={e => {
+                      const newFee = Number(e.target.value) || 0;
+                      // Also update dhaka in districts list if exists
+                      const currentDistricts = settings.delivery?.districts || [];
+                      const exists = currentDistricts.find(d => d.id === 'dhaka');
+                      let updatedDistricts = [];
+                      if (exists) {
+                        updatedDistricts = currentDistricts.map(d => d.id === 'dhaka' ? { ...d, deliveryFee: newFee } : d);
+                      } else {
+                        updatedDistricts = [...currentDistricts, { id: 'dhaka', nameBn: 'ঢাকা', nameEn: 'Dhaka', division: 'ঢাকা', deliveryFee: newFee }];
+                      }
+                      setSettings({
+                        ...settings,
+                        delivery: {
+                          ...settings.delivery,
+                          insideDhakaFee: newFee,
+                          districts: updatedDistricts
+                        }
+                      });
+                    }}
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="60"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  * ঢাকা মহানগরীর ভেতরের অর্ডারগুলোর জন্য (যেমন: ৳৬০)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. District List & Custom Rates Table */}
+          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">
+                  জেলা অনুযায়ী শিপিং চার্জ (সকল ৬৪ জেলা)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  যেকোনো নির্দিষ্ট জেলার জন্য আলাদা চার্জ লিখুন। খালি রাখলে স্বয়ংক্রিয়ভাবে ডিফল্ট চার্জ (৳{settings.delivery?.defaultDeliveryFee ?? 120}) কার্যকর হবে।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAddDistrictForm(!showAddDistrictForm)}
+                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition self-start cursor-pointer border border-blue-200"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ নতুন জেলা / এরিয়া যোগ করুন</span>
+              </button>
+            </div>
+
+            {/* Inline Add District / Area Form */}
+            {showAddDistrictForm && (
+              <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200 space-y-4 animate-in fade-in duration-150">
+                <h4 className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                  ভবিষ্যতের নতুন জেলা বা সাব-এরিয়া যোগ করুন
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">জেলার নাম (বাংলা)</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: কেরানীগঞ্জ"
+                      value={newDistrict.nameBn}
+                      onChange={e => setNewDistrict({ ...newDistrict, nameBn: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Name (English)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Keraniganj"
+                      value={newDistrict.nameEn}
+                      onChange={e => setNewDistrict({ ...newDistrict, nameEn: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">বিভাগ</label>
+                    <select
+                      value={newDistrict.division}
+                      onChange={e => setNewDistrict({ ...newDistrict, division: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs"
+                    >
+                      {['ঢাকা', 'চট্টগ্রাম', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'সিলেট', 'রংপুর', 'ময়মনসিংহ'].map(div => (
+                        <option key={div} value={div}>{div}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">শিপিং চার্জ (টাকা)</label>
+                    <input
+                      type="number"
+                      placeholder="100"
+                      value={newDistrict.deliveryFee}
+                      onChange={e => setNewDistrict({ ...newDistrict, deliveryFee: Number(e.target.value) || 0 })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddDistrictForm(false)}
+                    className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newDistrict.nameBn) {
+                        alert('জেলার বাংলা নাম লিখুন');
+                        return;
+                      }
+                      const id = (newDistrict.nameEn || newDistrict.nameBn).toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Date.now();
+                      const currentDistricts = settings.delivery?.districts || [];
+                      setSettings({
+                        ...settings,
+                        delivery: {
+                          ...settings.delivery,
+                          districts: [
+                            ...currentDistricts,
+                            {
+                              id,
+                              nameBn: newDistrict.nameBn,
+                              nameEn: newDistrict.nameEn || newDistrict.nameBn,
+                              division: newDistrict.division,
+                              deliveryFee: Number(newDistrict.deliveryFee) || (settings.delivery?.defaultDeliveryFee ?? 120),
+                              isCustom: true
+                            }
+                          ]
+                        }
+                      });
+                      setNewDistrict({ nameBn: '', nameEn: '', division: 'ঢাকা', deliveryFee: 120 });
+                      setShowAddDistrictForm(false);
+                    }}
+                    className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-xs"
+                  >
+                    তালিকায় যোগ করুন
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                placeholder="জেলা খুঁজুন (যেমন: ঢাকা, চট্টগ্রাম, সিলেট, Rangpur, Bogura...)"
+                value={districtSearch}
+                onChange={e => setDistrictSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
+
+            {/* All Districts Table */}
+            <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-[520px] overflow-y-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3.5">জেলা / এরিয়ার নাম</th>
+                    <th className="p-3.5">বিভাগ</th>
+                    <th className="p-3.5 w-44">শিপিং চার্জ (৳)</th>
+                    <th className="p-3.5">কার্যকর স্ট্যাটাস</th>
+                    <th className="p-3.5 text-right">অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(() => {
+                    // Combine standard 64 districts with custom ones and overrides
+                    const savedOverrides = settings.delivery?.districts || [];
+                    const allDistricts = [...BANGLADESH_DISTRICTS];
+
+                    // Merge overrides for standard districts
+                    const combined = allDistricts.map(std => {
+                      const found = savedOverrides.find(o => o.id === std.id);
+                      if (found) {
+                        return { ...std, ...found };
+                      }
+                      if (std.id === 'dhaka') {
+                        return { ...std, deliveryFee: settings.delivery?.insideDhakaFee ?? 60 };
+                      }
+                      return std;
+                    });
+
+                    // Add purely custom districts
+                    savedOverrides.forEach(ov => {
+                      if (ov.isCustom && !combined.find(c => c.id === ov.id)) {
+                        combined.push(ov);
+                      }
+                    });
+
+                    const filtered = combined.filter(d => {
+                      if (!districtSearch) return true;
+                      const q = districtSearch.toLowerCase();
+                      return d.nameBn.toLowerCase().includes(q) || 
+                             d.nameEn.toLowerCase().includes(q) || 
+                             d.division.toLowerCase().includes(q);
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={5} className="p-6 text-center text-slate-400">
+                            কোনো জেলা খুঁজে পাওয়া যায়নি।
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filtered.map(district => {
+                      const customRateObj = savedOverrides.find(o => o.id === district.id);
+                      const isOverridden = customRateObj && customRateObj.deliveryFee !== undefined && customRateObj.deliveryFee !== null && customRateObj.deliveryFee !== '';
+                      const isDhaka = district.id === 'dhaka';
+                      const effectiveFee = isOverridden 
+                        ? Number(customRateObj.deliveryFee) 
+                        : (isDhaka ? (settings.delivery?.insideDhakaFee ?? 60) : (settings.delivery?.defaultDeliveryFee ?? 120));
+
+                      const handleDistrictFeeChange = (valStr: string) => {
+                        const val = valStr === '' ? null : Number(valStr);
+                        const currList = settings.delivery?.districts || [];
+                        let updated = [];
+                        if (val === null) {
+                          // Remove custom override to revert to default
+                          updated = currList.filter(o => o.id !== district.id);
+                        } else {
+                          const existingIndex = currList.findIndex(o => o.id === district.id);
+                          if (existingIndex >= 0) {
+                            updated = currList.map(o => o.id === district.id ? { ...o, deliveryFee: val } : o);
+                          } else {
+                            updated = [...currList, {
+                              id: district.id,
+                              nameBn: district.nameBn,
+                              nameEn: district.nameEn,
+                              division: district.division,
+                              deliveryFee: val,
+                              isCustom: district.isCustom || false
+                            }];
+                          }
+                        }
+
+                        setSettings({
+                          ...settings,
+                          delivery: {
+                            ...settings.delivery,
+                            districts: updated
+                          }
+                        });
+                      };
+
+                      return (
+                        <tr key={district.id} className="hover:bg-slate-50/80 transition">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{district.nameBn}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{district.nameEn}</div>
+                          </td>
+                          <td className="p-3.5 text-slate-600 font-medium">
+                            {district.division}
+                          </td>
+                          <td className="p-3.5">
+                            <div className="relative max-w-[130px]">
+                              <span className="absolute left-2.5 top-2 text-slate-400 font-bold">৳</span>
+                              <input
+                                type="number"
+                                value={isOverridden ? customRateObj.deliveryFee : ''}
+                                onChange={e => handleDistrictFeeChange(e.target.value)}
+                                placeholder={String(isDhaka ? (settings.delivery?.insideDhakaFee ?? 60) : (settings.delivery?.defaultDeliveryFee ?? 120))}
+                                className="w-full pl-6 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-1 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+                          </td>
+                          <td className="p-3.5">
+                            {isOverridden || isDhaka ? (
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                                কাস্টম: ৳{effectiveFee}
+                              </span>
+                            ) : (
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                ডিফল্ট: ৳{effectiveFee}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3.5 text-right">
+                            {district.isCustom ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currList = settings.delivery?.districts || [];
+                                  setSettings({
+                                    ...settings,
+                                    delivery: {
+                                      ...settings.delivery,
+                                      districts: currList.filter(o => o.id !== district.id)
+                                    }
+                                  });
+                                }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                title="মুছে ফেলুন"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            ) : isOverridden ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDistrictFeeChange('')}
+                                className="text-[10px] text-slate-400 hover:text-slate-700 underline font-medium cursor-pointer"
+                              >
+                                ডিফল্ট করুন
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
