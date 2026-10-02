@@ -18,6 +18,7 @@ import {
   ShoppingBag, 
   CheckCircle2, 
   Sparkles,
+  Upload,
   Phone,
   Mail,
   ExternalLink,
@@ -27,10 +28,27 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export default function StorefrontCustomizer() {
   const params = useParams();
   const tenantId = (params?.tenant as string) || '';
+
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+
+  const handleCloudinaryUpload = async (file: File, callback: (url: string) => void, fieldId: string) => {
+    if (!file) return;
+    setUploadingField(fieldId);
+    try {
+      const url = await uploadToCloudinary(file, tenantId);
+      callback(url);
+      alert('ছবি সফলভাবে Cloudinary-তে আপলোড হয়েছে!');
+    } catch (err: any) {
+      alert(err.message || 'ক্লাউডিনারি আপলোড ত্রুটি');
+    } finally {
+      setUploadingField(null);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<'header' | 'slider' | 'categories' | 'products' | 'banners' | 'footer'>('header');
   const [loading, setLoading] = useState(true);
@@ -474,16 +492,43 @@ export default function StorefrontCustomizer() {
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">লোগো ইমেজ লিঙ্ক (Logo Image URL)</label>
+            <div className="md:col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-600 uppercase">স্টোর লোগো (Cloudinary Upload / URL)</label>
+                <label className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                  {uploadingField === 'logo' ? (
+                    <span className="text-xs text-blue-600 animate-pulse">আপলোড হচ্ছে...</span>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>লোগো আপলোড (Cloudinary)</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) handleCloudinaryUpload(f, url => setLayout({ ...layout, header: { ...layout.header, logoUrl: url } }), 'logo');
+                      e.target.value = '';
+                    }} 
+                    className="hidden" 
+                    disabled={uploadingField === 'logo'}
+                  />
+                </label>
+              </div>
               <input 
                 type="text"
                 value={layout.header.logoUrl}
                 onChange={e => setLayout({ ...layout, header: { ...layout.header, logoUrl: e.target.value } })}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono"
-                placeholder="https://.../logo.png"
+                placeholder="https://res.cloudinary.com/... বা লোগো URL"
               />
-              <p className="text-xs text-slate-400 mt-1">ফাঁকা রাখলে স্বয়ংক্রিয়ভাবে আকর্ষণীয় স্টোর আইকন ও নাম প্রদর্শিত হবে।</p>
+              {layout.header.logoUrl && (
+                <div className="p-2 bg-slate-100 rounded-xl inline-block border border-slate-200">
+                  <img src={layout.header.logoUrl} alt="Logo Preview" className="h-10 w-auto object-contain" />
+                </div>
+              )}
             </div>
 
             <div>
@@ -568,14 +613,31 @@ export default function StorefrontCustomizer() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ব্যাকগ্রাউন্ড ইমেজ লিঙ্ক (HD Background)</label>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-600 uppercase">ব্যাকগ্রাউন্ড ইমেজ (Cloudinary / URL)</label>
+                      <label className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                        <Upload className="w-3 h-3" />
+                        <span>আপলোড</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) handleCloudinaryUpload(f, url => handleUpdateSlide(idx, 'bgImage', url), `slide_${idx}`);
+                            e.target.value = '';
+                          }} 
+                          className="hidden" 
+                          disabled={uploadingField === `slide_${idx}`}
+                        />
+                      </label>
+                    </div>
                     <input 
                       type="text"
                       value={slide.bgImage || ''}
                       onChange={e => handleUpdateSlide(idx, 'bgImage', e.target.value)}
                       className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm font-mono"
-                      placeholder="https://images.unsplash.com/..."
+                      placeholder="https://res.cloudinary.com/..."
                     />
                   </div>
 
@@ -799,8 +861,29 @@ export default function StorefrontCustomizer() {
                       className="w-full p-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ইমেজ লিঙ্ক (Image URL)</label>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-600 uppercase">ব্যানার ছবি (Cloudinary / URL)</label>
+                      <label className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                        <Upload className="w-3 h-3" />
+                        <span>আপলোড</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) handleCloudinaryUpload(f, url => {
+                              const updated = [...layout.banners.items];
+                              updated[bIdx].imageUrl = url;
+                              setLayout({ ...layout, banners: { ...layout.banners, items: updated } });
+                            }, `banner_${bIdx}`);
+                            e.target.value = '';
+                          }} 
+                          className="hidden" 
+                          disabled={uploadingField === `banner_${bIdx}`}
+                        />
+                      </label>
+                    </div>
                     <input 
                       type="text"
                       value={b.imageUrl}

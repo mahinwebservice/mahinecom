@@ -3,11 +3,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { 
   Settings, 
-  Save, 
+  Save,
+  Upload, 
   Globe, 
   Shield, 
   CreditCard, 
@@ -35,6 +37,21 @@ export default function TenantSettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'sms' | 'payments' | 'cloudinary' | 'compliance'>('general');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingField, setUploadingField] = useState<string | null>(null);
+
+  const handleCloudinaryUpload = async (file: File, callback: (url: string) => void, fieldId: string) => {
+    if (!file) return;
+    setUploadingField(fieldId);
+    try {
+      const url = await uploadToCloudinary(file, tenantId);
+      callback(url);
+      alert('ছবি সফলভাবে Cloudinary-তে আপলোড হয়েছে!');
+    } catch (err: any) {
+      alert(err.message || 'ক্লাউডিনারি আপলোড ত্রুটি');
+    } finally {
+      setUploadingField(null);
+    }
+  };
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Settings State
@@ -314,25 +331,81 @@ export default function TenantSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">লোগো লিঙ্ক (Logo Image URL)</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase">লোগো ইমেজ (Cloudinary / URL)</label>
+                <label className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                  {uploadingField === 'logo' ? (
+                    <span className="text-xs text-blue-600 animate-pulse">আপলোড হচ্ছে...</span>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>লোগো আপলোড (Cloudinary)</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) handleCloudinaryUpload(f, url => setSettings({ ...settings, logoUrl: url }), 'logo');
+                      e.target.value = '';
+                    }} 
+                    className="hidden" 
+                    disabled={uploadingField === 'logo'}
+                  />
+                </label>
+              </div>
               <input 
                 type="text" 
                 value={settings.logoUrl}
                 onChange={e => setSettings({ ...settings, logoUrl: e.target.value })}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                placeholder="https://..."
+                placeholder="https://res.cloudinary.com/... বা লোগো URL"
               />
+              {settings.logoUrl && (
+                <div className="mt-2 p-2 bg-slate-100 rounded-xl inline-block border border-slate-200">
+                  <img src={settings.logoUrl} alt="Logo" className="h-9 w-auto object-contain" />
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-2">ব্রাউজার ফেভিকন (Favicon URL)</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase">ব্রাউজার ফেভিকন (Cloudinary / URL)</label>
+                <label className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer">
+                  {uploadingField === 'favicon' ? (
+                    <span className="text-xs text-blue-600 animate-pulse">আপলোড হচ্ছে...</span>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>ফেভিকন আপলোড (Cloudinary)</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) handleCloudinaryUpload(f, url => setSettings({ ...settings, faviconUrl: url }), 'favicon');
+                      e.target.value = '';
+                    }} 
+                    className="hidden" 
+                    disabled={uploadingField === 'favicon'}
+                  />
+                </label>
+              </div>
               <input 
                 type="text" 
                 value={settings.faviconUrl}
                 onChange={e => setSettings({ ...settings, faviconUrl: e.target.value })}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-                placeholder="https://.../favicon.ico"
+                placeholder="https://res.cloudinary.com/... বা favicon.ico"
               />
+              {settings.faviconUrl && (
+                <div className="mt-2 p-2 bg-slate-100 rounded-xl inline-block border border-slate-200">
+                  <img src={settings.faviconUrl} alt="Favicon" className="w-6 h-6 object-contain" />
+                </div>
+              )}
             </div>
 
             <div>

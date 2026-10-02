@@ -864,7 +864,7 @@ export default function TenantStorefrontPage() {
                 className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group"
               >
                 {/* Image Container with Badge */}
-                <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                <Link href={`/${tenantId}/product/${prod.id}`} className="aspect-square bg-slate-100 relative overflow-hidden block cursor-pointer">
                   <img 
                     src={prod.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80'} 
                     alt={prod.title} 
@@ -875,7 +875,7 @@ export default function TenantStorefrontPage() {
                       {prod.badge}
                     </span>
                   )}
-                </div>
+                </Link>
 
                 {/* Card Content */}
                 <div className="p-4 sm:p-5 flex flex-col flex-1">
@@ -883,17 +883,11 @@ export default function TenantStorefrontPage() {
                     {prod.category || 'Special'}
                   </span>
 
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base line-clamp-2 leading-snug mb-2 group-hover:text-blue-600 transition">
-                    {prod.title}
-                  </h3>
-
-                  {/* Rating Stars */}
-                  <div className="flex items-center gap-1 text-amber-400 text-xs mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                    ))}
-                    <span className="text-[11px] font-bold text-slate-500 ml-1">5.0</span>
-                  </div>
+                  <Link href={`/${tenantId}/product/${prod.id}`}>
+                    <h3 className="font-bold text-slate-900 text-sm sm:text-base line-clamp-2 leading-snug mb-3 group-hover:text-blue-600 transition cursor-pointer">
+                      {prod.title}
+                    </h3>
+                  </Link>
 
                   {/* Pricing */}
                   <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between mb-4">

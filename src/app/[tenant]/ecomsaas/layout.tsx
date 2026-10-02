@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { ShoppingBag, Package, Settings, LayoutTemplate, Store, LogOut, ExternalLink } from 'lucide-react';
+import { ShoppingBag, Package, FileText, Settings, LayoutTemplate, Store, LogOut, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TenantEcomsaasLayout({ children }: { children: React.ReactNode }) {
@@ -128,6 +128,14 @@ export default function TenantEcomsaasLayout({ children }: { children: React.Rea
           >
             <Package className="w-4 h-4" /> 
             <span>প্রোডাক্ট ও ক্যাটাগরি</span>
+          </Link>
+
+          <Link 
+            href={`/${tenantId}/ecomsaas/pages`} 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition text-sm ${pathname?.includes('/pages') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <FileText className="w-4 h-4" /> 
+            <span>পেজসমূহ (Pages)</span>
           </Link>
 
           <Link 

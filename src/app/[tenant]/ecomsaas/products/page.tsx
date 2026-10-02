@@ -29,6 +29,7 @@ import {
   Check
 } from 'lucide-react';
 import Link from 'next/link';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 export default function TenantProductsPage() {
   const params = useParams();
@@ -37,6 +38,8 @@ export default function TenantProductsPage() {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isUploadingCat, setIsUploadingCat] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -104,25 +107,50 @@ export default function TenantProductsPage() {
     fetchData();
   }, [tenantId]);
 
-  // Handle Image Upload via Local File Picker (converts to base64 Data URL)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Image Upload via Local File Picker directly to Cloudinary
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          setProductForm(prev => ({
-            ...prev,
-            images: [...prev.images, reader.result as string]
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
-    });
+    setIsUploadingImages(true);
+    try {
+      const uploadPromises = Array.from(files).map((file: File) => 
+        uploadToCloudinary(file, tenantId)
+      );
+      const uploadedUrls = await Promise.all(uploadPromises);
+      setProductForm(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls]
+      }));
+      alert(`${uploadedUrls.length}টি ছবি সফলভাবে Cloudinary-তে আপলোড করা হয়েছে!`);
+    } catch (err: any) {
+      alert(err.message || 'ক্লাউডিনারি আপলোড ত্রুটি');
+    } finally {
+      setIsUploadingImages(false);
+      e.target.value = '';
+    }
+  };
 
-    e.target.value = '';
+  // Category image upload to Cloudinary
+  const handleCatFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isQuick = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCat(true);
+    try {
+      const url = await uploadToCloudinary(file, tenantId);
+      if (isQuick) {
+        setQuickCatImage(url);
+      } else {
+        setCategoryForm(prev => ({ ...prev, imageUrl: url }));
+      }
+      alert('ক্যাটাগরি ছবি Cloudinary-তে আপলোড হয়েছে!');
+    } catch (err: any) {
+      alert(err.message || 'আপলোড ব্যর্থ হয়েছে');
+    } finally {
+      setIsUploadingCat(false);
+      e.target.value = '';
+    }
   };
 
   // Add Image via URL input
@@ -729,14 +757,24 @@ export default function TenantProductsPage() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {/* File Upload Button */}
                   <label className="flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-blue-400 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50/50 cursor-pointer transition">
-                    <Upload className="w-4 h-4" />
-                    <span>ডিভাইস থেকে ছবি আপলোড করুন</span>
+                    {isUploadingImages ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                        <span>ক্লাউডিনারিতে আপলোড হচ্ছে...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4" />
+                        <span>ডিভাইস থেকে ছবি আপলোড করুন (Cloudinary)</span>
+                      </>
+                    )}
                     <input 
                       type="file" 
                       multiple 
                       accept="image/*" 
                       onChange={handleFileUpload} 
                       className="hidden" 
+                      disabled={isUploadingImages}
                     />
                   </label>
 
