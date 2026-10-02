@@ -225,6 +225,7 @@ export default function TenantStorefrontPage() {
         facebook: customizerConfig?.footer?.facebook || '',
         whatsapp: customizerConfig?.footer?.whatsapp || '',
         youtube: customizerConfig?.footer?.youtube || '',
+        instagram: customizerConfig?.footer?.instagram || '',
         col2Title: customizerConfig?.footer?.col2Title || (lang === 'bn' ? 'প্রয়োজনীয় লিঙ্ক' : 'Quick Links'),
         col2Links: customizerConfig?.footer?.col2Links || [
           { label: lang === 'bn' ? 'হোম পেজ' : 'Home', url: `/${tenantId}` },
@@ -983,6 +984,32 @@ export default function TenantStorefrontPage() {
                 </div>
               )}
             </div>
+
+            {/* Social Media Links */}
+            {(config.footer.facebook || config.footer.whatsapp || config.footer.youtube || config.footer.instagram) && (
+              <div className="pt-2 flex items-center gap-2 flex-wrap">
+                {config.footer.facebook && (
+                  <a href={config.footer.facebook} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-blue-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="Facebook">
+                    <span>Facebook</span>
+                  </a>
+                )}
+                {config.footer.whatsapp && (
+                  <a href={config.footer.whatsapp.startsWith('http') ? config.footer.whatsapp : `https://wa.me/${config.footer.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5" title="WhatsApp">
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+                {config.footer.youtube && (
+                  <a href={config.footer.youtube} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-red-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="YouTube">
+                    <span>YouTube</span>
+                  </a>
+                )}
+                {config.footer.instagram && (
+                  <a href={config.footer.instagram} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-pink-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="Instagram">
+                    <span>Instagram</span>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Column 2: Quick Links */}

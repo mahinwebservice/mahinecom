@@ -1,232 +1,331 @@
 'use client';
+// @ts-nocheck
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { Printer, X, ArrowLeft, Phone, Mail, MapPin, CheckCircle, ShieldCheck } from 'lucide-react';
 
 export default function PrintSuite() {
   const params = useParams();
+  const router = useRouter();
   const tenantId = (params?.tenant as string) || '';
   const type = (params?.type as string) || '';
   const id = (params?.id as string) || '';
+
   const [data, setData] = useState<any>(null);
   const [tenantInfo, setTenantInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch data based on type
     const fetchData = async () => {
-      // 1. Fetch Tenant Settings
-      const tenantSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/general`));
-      if (tenantSnap.exists()) {
-        setTenantInfo(tenantSnap.data());
-      } else {
-        setTenantInfo({ businessName: tenantId, phone: '', email: '', officeAddress: '' });
-      }
-
-      // 2. Fetch specific entity (Order, Quotation, etc.)
-      if (type === 'invoice' || type === 'shipping-label') {
-        const orderSnap = await getDoc(doc(db, `tenants/${tenantId}/orders/${id}`));
-        if (orderSnap.exists()) {
-          setData(orderSnap.data());
+      try {
+        // 1. Fetch Tenant General Settings
+        const tenantSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/general`));
+        if (tenantSnap.exists()) {
+          setTenantInfo(tenantSnap.data());
+        } else {
+          setTenantInfo({ 
+            businessName: tenantId.toUpperCase(), 
+            phone: '01700-000000', 
+            email: 'support@store.com', 
+            officeAddress: 'ঢাকা, বাংলাদেশ' 
+          });
         }
+
+        // 2. Fetch specific Order
+        if (type === 'invoice' || type === 'shipping-label') {
+          const orderSnap = await getDoc(doc(db, `tenants/${tenantId}/orders/${id}`));
+          if (orderSnap.exists()) {
+            setData(orderSnap.data());
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching print data:", err);
+      } finally {
+        setLoading(false);
       }
-      
-      // If type is 'pad', it's just the letterhead. No specific entity needed.
     };
 
-    fetchData();
+    if (tenantId) fetchData();
   }, [tenantId, type, id]);
 
-  useEffect(() => {
-    if (data || type === 'pad') {
-      // Wait for images to load ideally, but for now set a small timeout before auto-print
-      setTimeout(() => {
-        window.print();
-      }, 1000);
-    }
-  }, [data, type]);
+  const handlePrint = () => {
+    window.print();
+  };
 
-  if (!data && type !== 'pad') return <div className="p-10 text-center">Loading Document...</div>;
-
-  // --- RENDER INVOICE ---
-  if (type === 'invoice') {
+  if (loading) {
     return (
-      <div className="bg-white text-black p-8 max-w-4xl mx-auto print:max-w-full print:p-0">
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-gray-900 pb-6 mb-8">
-          <div>
-            {tenantInfo?.logoUrl ? (
-              <img src={tenantInfo.logoUrl} alt="Logo" className="h-16 mb-2" />
-            ) : (
-              <h1 className="text-4xl font-black uppercase tracking-tighter">{tenantInfo?.businessName}</h1>
-            )}
-            <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{tenantInfo?.officeAddress}</p>
-            <p className="text-sm text-gray-600">Phone: {tenantInfo?.phone} | Email: {tenantInfo?.email}</p>
-          </div>
-          <div className="text-right">
-            <h2 className="text-4xl font-light text-gray-400 mb-2">INVOICE</h2>
-            <p className="font-bold">INV-{id.substring(0, 8).toUpperCase()}</p>
-            <p className="text-sm">Date: {new Date(data.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
-
-        {/* Bill To */}
-        <div className="mb-8">
-          <h3 className="text-gray-500 font-bold text-sm uppercase mb-2">Bill To:</h3>
-          <p className="font-bold text-lg">{data.customerInfo.name}</p>
-          <p>{data.customerInfo.address}</p>
-          <p>{data.customerInfo.city} - {data.customerInfo.zone === 'inside_city' ? 'Inside City' : 'Outside City'}</p>
-          <p>Phone: {data.customerInfo.phone}</p>
-        </div>
-
-        {/* Items Table */}
-        <table className="w-full mb-8 text-left">
-          <thead>
-            <tr className="border-b border-gray-300">
-              <th className="py-2">Item Description</th>
-              <th className="py-2 text-center">Qty</th>
-              <th className="py-2 text-right">Price</th>
-              <th className="py-2 text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((item: any, index: number) => (
-              <tr key={index} className="border-b border-gray-100">
-                <td className="py-3">{item.title}</td>
-                <td className="py-3 text-center">{item.quantity}</td>
-                <td className="py-3 text-right">৳{item.price}</td>
-                <td className="py-3 text-right font-medium">৳{item.price * item.quantity}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Totals */}
-        <div className="flex justify-end mb-16">
-          <div className="w-64 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal:</span>
-              <span>৳{data.subtotal}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Delivery:</span>
-              <span>৳{data.deliveryFee}</span>
-            </div>
-            <div className="flex justify-between border-t-2 border-gray-900 pt-2 font-bold text-lg">
-              <span>Total:</span>
-              <span>৳{data.total}</span>
-            </div>
-            <div className="flex justify-between text-sm pt-2">
-              <span className="text-gray-500">Payment:</span>
-              <span className="uppercase">{data.paymentMethod.replace('_', ' ')} ({data.paymentStatus})</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Note */}
-        <div className="text-center text-sm text-gray-500 pt-8 border-t">
-          Thank you for your business!
-        </div>
-
-        {/* CSS for print specifically */}
-        <style dangerouslySetInnerHTML={{__html: `
-          @media print {
-            body { background: white; margin: 0; padding: 0; }
-            @page { size: A4; margin: 20mm; }
-          }
-        `}} />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+        <p className="text-sm font-semibold">ডকুমেন্ট লোড হচ্ছে...</p>
       </div>
     );
   }
 
-  // --- RENDER COMPANY PAD (LETTERHEAD) ---
-  if (type === 'pad') {
+  if (!data && type !== 'pad') {
     return (
-      <div className="bg-white min-h-[297mm] max-w-[210mm] mx-auto relative print:m-0 print:w-full print:h-screen shadow-lg print:shadow-none">
-        {/* Header */}
-        <div className="p-10 border-b-[8px] border-blue-900 flex justify-between items-center bg-gray-50">
-           {tenantInfo?.logoUrl ? (
-              <img src={tenantInfo.logoUrl} alt="Logo" className="h-20" />
-            ) : (
-              <h1 className="text-5xl font-black uppercase text-blue-900">{tenantInfo?.businessName}</h1>
-            )}
-            <div className="text-right">
-              <p className="font-bold text-blue-900 text-lg">Engineering & Services</p>
-            </div>
-        </div>
-        
-        {/* Content Area (Blank for handwriting or printing on top) */}
-        <div className="p-10 text-right">
-          <p className="text-gray-500">Date: _______________</p>
-          <p className="text-gray-500 mt-2">Ref: ________________</p>
-        </div>
-
-        {/* Footer */}
-        <div className="absolute bottom-0 w-full p-8 border-t-[4px] border-blue-900 bg-gray-50 text-center flex flex-col items-center justify-center">
-          <p className="font-bold text-gray-800">{tenantInfo?.officeAddress}</p>
-          <div className="flex gap-4 mt-2 text-sm font-medium text-gray-600">
-            <span>📞 {tenantInfo?.phone}</span>
-            <span>✉️ {tenantInfo?.email}</span>
-            <span>🌐 {tenantId}.com</span>
-          </div>
-        </div>
-
-        <style dangerouslySetInnerHTML={{__html: `
-          @media print {
-            body { background: white; margin: 0; padding: 0; }
-            @page { size: A4; margin: 0; }
-          }
-        `}} />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <p className="text-red-500 font-bold mb-2">অর্ডার তথ্য পাওয়া যায়নি!</p>
+        <button 
+          onClick={() => window.close()} 
+          className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm"
+        >
+          উইন্ডো বন্ধ করুন
+        </button>
       </div>
     );
   }
 
-  // --- RENDER SHIPPING LABEL ---
-  if (type === 'shipping-label') {
-    return (
-      <div className="bg-white p-4 max-w-[4in] min-h-[6in] border-2 border-black mx-auto print:m-0 print:border-none print:w-[4in] print:h-[6in]">
-        <div className="border-b-4 border-black pb-4 mb-4 flex justify-between items-center">
-          <h1 className="text-2xl font-black uppercase">{tenantInfo?.businessName}</h1>
-          <div className="text-xs font-bold px-2 py-1 bg-black text-white rounded">STANDARD</div>
-        </div>
-        
-        <div className="mb-6">
-          <h3 className="text-xs font-bold uppercase border-b border-black mb-2">Ship To:</h3>
-          <p className="font-black text-2xl leading-none mb-1">{data.customerInfo.name}</p>
-          <p className="text-lg font-bold">Ph: {data.customerInfo.phone}</p>
-          <p className="text-sm mt-2 font-medium">{data.customerInfo.address}</p>
-          <p className="text-sm font-bold mt-1">{data.customerInfo.city} - {data.customerInfo.zone === 'inside_city' ? 'Inside City' : 'Outside City'}</p>
+  // Generate Unique Invoice Number: StoreID-YYMMDDHHMMSS
+  const orderDate = data?.createdAt ? new Date(data.createdAt) : new Date();
+  const yy = String(orderDate.getFullYear()).slice(-2);
+  const mm = String(orderDate.getMonth() + 1).padStart(2, '0');
+  const dd = String(orderDate.getDate()).padStart(2, '0');
+  const hh = String(orderDate.getHours()).padStart(2, '0');
+  const min = String(orderDate.getMinutes()).padStart(2, '0');
+  const ss = String(orderDate.getSeconds()).padStart(2, '0');
+  const cleanTenant = tenantId.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  const invoiceNumber = `${cleanTenant}-${yy}${mm}${dd}${hh}${min}${ss}`;
+
+  const formattedDate = orderDate.toLocaleDateString('bn-BD', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }) + ', ' + orderDate.toLocaleTimeString('bn-BD', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-100/60 print:bg-white text-slate-900 py-6 px-4 print:p-0">
+      
+      {/* On-Screen Action Bar (Hidden during Print) */}
+      <div className="max-w-[210mm] mx-auto mb-6 flex items-center justify-between print:hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">A4 ইনভয়েস প্রিন্ট প্রিভিউ</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-mono font-bold">
+            {invoiceNumber}
+          </span>
         </div>
 
-        <div className="border-t-4 border-b-4 border-black py-4 mb-6 text-center bg-gray-100">
-           <h2 className="text-sm font-bold uppercase mb-1">Cash on Delivery Amount</h2>
-           <p className="text-5xl font-black">৳{data.paymentMethod === 'cod' ? data.total : '0.00'}</p>
-           {data.paymentMethod !== 'cod' && <p className="text-xs font-bold uppercase mt-1">PAID VIA {data.paymentMethod}</p>}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePrint}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md flex items-center gap-2 transition cursor-pointer"
+          >
+            <Printer className="w-4 h-4" />
+            <span>প্রিন্ট করুন (Print A4)</span>
+          </button>
+          <button
+            onClick={() => window.close()}
+            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+            title="বন্ধ করুন"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
+      </div>
 
+      {/* --- A4 PRINTABLE INVOICE SHEET --- */}
+      <div 
+        id="printable-invoice"
+        className="w-full max-w-[210mm] min-h-[285mm] mx-auto bg-white p-8 sm:p-12 shadow-xl print:shadow-none print:p-0 border border-slate-200 print:border-none rounded-2xl print:rounded-none flex flex-col justify-between"
+      >
         <div>
-          <h3 className="text-xs font-bold uppercase border-b border-black mb-1">Order Details:</h3>
-          <p className="text-xs font-mono">Order ID: {id}</p>
-          <p className="text-xs mt-2 text-gray-500">Items: {data.items.length} | Weight: Standard</p>
+          {/* 1. ELEGANT OFFICE LETTERHEAD PAD HEADER */}
+          <div className="border-b-2 border-slate-900 pb-5 mb-6">
+            <div className="flex items-start justify-between gap-6">
+              
+              {/* Left: Shop Logo, Name, Address */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  {tenantInfo?.logoUrl ? (
+                    <img 
+                      src={tenantInfo.logoUrl} 
+                      alt="Shop Logo" 
+                      className="h-12 w-auto max-w-[140px] object-contain" 
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-xl">
+                      {tenantId.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">
+                      {tenantInfo?.businessName || tenantId.toUpperCase()}
+                    </h1>
+                    <span className="text-[11px] text-slate-500 font-medium block mt-0.5">
+                      {tenantInfo?.tagline || 'অফিসিয়াল অনলাইন স্টোর'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-600 space-y-0.5 mt-2">
+                  {tenantInfo?.officeAddress && <p>{tenantInfo.officeAddress}</p>}
+                  <p className="flex items-center gap-3">
+                    {tenantInfo?.phone && <span>ফোন: {tenantInfo.phone}</span>}
+                    {tenantInfo?.email && <span>ইমেইল: {tenantInfo.email}</span>}
+                  </p>
+                  {(tenantInfo?.compliance?.dbidNumber || tenantInfo?.compliance?.binNumber) && (
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      {tenantInfo?.compliance?.dbidNumber && `DBID: ${tenantInfo.compliance.dbidNumber} | `}
+                      {tenantInfo?.compliance?.binNumber && `BIN: ${tenantInfo.compliance.binNumber}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Invoice Meta Box */}
+              <div className="text-right shrink-0">
+                <div className="inline-block bg-slate-900 text-white px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest mb-2">
+                  ইনভয়েস / INVOICE
+                </div>
+                <p className="text-xs text-slate-500 font-bold">ইনভয়েস নম্বর:</p>
+                <p className="text-sm font-black font-mono text-slate-900 tracking-wide">{invoiceNumber}</p>
+                <p className="text-[11px] text-slate-500 mt-1">{formattedDate}</p>
+                
+                <div className="mt-2">
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                    data.paymentStatus === 'paid' 
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
+                      : 'bg-amber-50 text-amber-700 border-amber-300'
+                  }`}>
+                    {data.paymentMethod === 'cod' ? 'CASH ON DELIVERY (PENDING)' : `${data.paymentMethod?.toUpperCase()} (${data.paymentStatus?.toUpperCase()})`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. CUSTOMER & DELIVERY INFO */}
+          <div className="grid grid-cols-2 gap-6 bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 mb-6 text-xs">
+            <div>
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] block mb-1">
+                গ্রাহকের তথ্য (CUSTOMER INFO)
+              </span>
+              <p className="font-black text-slate-900 text-sm">{data.customerInfo?.name || data.name || 'গ্রাহকের নাম'}</p>
+              <p className="font-bold text-slate-800 mt-0.5">মোবাইল: {data.customerInfo?.phone || data.phone || 'N/A'}</p>
+            </div>
+
+            <div>
+              <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] block mb-1">
+                ডেলিভারি ঠিকানা (SHIPPING ADDRESS)
+              </span>
+              <p className="text-slate-800 font-medium">{data.customerInfo?.address || data.address || 'ঠিকানা দেওয়া হয়নি'}</p>
+              <p className="text-slate-600 mt-0.5">
+                শহর: {data.customerInfo?.city || data.city || 'বাংলাদেশ'} ({data.customerInfo?.zone === 'inside_city' ? 'ঢাকার ভিতরে' : 'ঢাকার বাইরে'})
+              </p>
+            </div>
+          </div>
+
+          {/* 3. ORDER ITEMS TABLE */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                  <th className="py-2.5 px-3 text-center w-10">#</th>
+                  <th className="py-2.5 px-4">পণ্যের বিবরণ (ITEM DESCRIPTION)</th>
+                  <th className="py-2.5 px-3 text-center w-16">পরিমাণ</th>
+                  <th className="py-2.5 px-4 text-right w-24">একক মূল্য</th>
+                  <th className="py-2.5 px-4 text-right w-28">মোট টাকা</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(data.items || []).map((item: any, idx: number) => {
+                  const itemPrice = Number(item.price || 0);
+                  const itemQty = Number(item.quantity || 1);
+                  const itemTotal = itemPrice * itemQty;
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="py-3 px-3 text-center text-slate-500 font-mono">{idx + 1}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">
+                        <span>{item.title}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center font-bold text-slate-800">{itemQty}</td>
+                      <td className="py-3 px-4 text-right font-mono text-slate-700">৳{itemPrice.toLocaleString()}</td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">৳{itemTotal.toLocaleString()}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 4. TOTALS SUMMARY */}
+          <div className="flex justify-end mb-8">
+            <div className="w-64 space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>পণ্যের উপ-মোট (Subtotal):</span>
+                <span className="font-mono font-bold text-slate-800">৳{Number(data.subtotal || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>ডেলিভারি চার্জ (Delivery Fee):</span>
+                <span className="font-mono font-bold text-slate-800">৳{Number(data.deliveryFee || 0).toLocaleString()}</span>
+              </div>
+              
+              <div className="flex justify-between items-center bg-slate-900 text-white p-2.5 rounded-lg font-black text-sm mt-2">
+                <span>সর্বমোট প্রদেয় (Grand Total):</span>
+                <span className="font-mono text-base">৳{Number(data.total || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-8 text-center">
-           {/* Placeholder for a Barcode generator */}
-           <div className="w-full h-20 border-2 border-black flex items-center justify-center font-mono tracking-[0.5em] text-xl font-bold bg-stripes">
-             *{id.substring(0, 10).toUpperCase()}*
-           </div>
-        </div>
+        {/* 5. OFFICIAL SIGNATURES & FOOTER */}
+        <div>
+          <div className="grid grid-cols-2 gap-8 pt-10 border-t border-slate-200 text-xs text-center mb-6">
+            <div>
+              <div className="border-t border-dashed border-slate-400 w-44 mx-auto mb-1"></div>
+              <p className="font-bold text-slate-700">গ্রাহকের স্বাক্ষর</p>
+              <p className="text-[10px] text-slate-400">Customer Signature</p>
+            </div>
 
-        <style dangerouslySetInnerHTML={{__html: `
-          @media print {
-            body { background: white; margin: 0; padding: 0; }
-            @page { size: 4in 6in; margin: 0; }
-          }
-        `}} />
+            <div>
+              <div className="border-t border-dashed border-slate-400 w-44 mx-auto mb-1"></div>
+              <p className="font-bold text-slate-900">অনুমোদিত কর্মকর্তার স্বাক্ষর ও সিল</p>
+              <p className="text-[10px] text-slate-400">Authorized Signature & Seal</p>
+            </div>
+          </div>
+
+          <div className="text-center border-t border-slate-100 pt-3 text-[11px] text-slate-500">
+            <p className="font-semibold text-slate-700">আমাদের সাথে কেনাকাটা করার জন্য ধন্যবাদ!</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              যেকোনো প্রয়োজনে আমাদের হেল্পলাইনে যোগাযোগ করুন: {tenantInfo?.phone || '০১৭০০-০০০০০০'} | {tenantInfo?.email || ''}
+            </p>
+          </div>
+        </div>
       </div>
-    );
-  }
 
-  return <div>Unknown Print Type</div>;
+      {/* --- PURE A4 PRINT STYLES --- */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 11pt !important;
+          }
+          aside, nav, header, button, .print-hide, .no-print {
+            display: none !important;
+          }
+          #printable-invoice {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+        }
+      `}} />
+    </div>
+  );
 }

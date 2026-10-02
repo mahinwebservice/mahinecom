@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { LayoutTemplate, ShoppingBag, Package, Settings, LogOut, Link as LinkIcon } from 'lucide-react';
@@ -12,6 +12,12 @@ export default function TenantAdminLayout({ children }: { children: React.ReactN
   const router = useRouter();
   const params = useParams();
   const tenantId = (params?.tenant as string) || '';
+  const pathname = usePathname();
+
+  // If this is a print route (invoice, pad, label), do NOT render any admin sidebar or wrapper!
+  if (pathname?.includes('/print/')) {
+    return <>{children}</>;
+  }
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -153,6 +153,7 @@ export default function StorefrontCustomizer() {
       facebook: '',
       whatsapp: '',
       youtube: '',
+      instagram: '',
       col2Title: 'প্রয়োজনীয় লিঙ্ক',
       col2Links: [
         { label: 'হোম পেজ', url: `/${tenantId}` },
@@ -820,112 +821,376 @@ export default function StorefrontCustomizer() {
 
       {/* Tab 6: 4-Column Rich Footer */}
       {activeTab === 'footer' && (
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs space-y-6">
-          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">৪-কলাম বিশিষ্ট রিচ ফুটার কাস্টমাইজেশন</h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xs space-y-8">
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ফুটার ব্যাকগ্রাউন্ড কালার</label>
+              <h2 className="text-lg font-bold text-slate-900">৪-কলাম বিশিষ্ট রিচ ফুটার সম্পূর্ণ কাস্টমাইজেশন</h2>
+              <p className="text-xs text-slate-500">ফুটারের প্রতিটি কলামের শিরোনাম, লিঙ্ক, তথ্য ও সোশ্যাল মিডিয়া কাস্টমাইজ করুন</p>
+            </div>
+          </div>
+
+          {/* Color Settings */}
+          <div className="grid md:grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-200/70">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">ফুটার ব্যাকগ্রাউন্ড কালার</label>
               <div className="flex items-center gap-3">
                 <input 
                   type="color"
-                  value={layout.footer.bgColor}
+                  value={layout.footer.bgColor || '#0b1120'}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, bgColor: e.target.value } })}
                   className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0.5"
                 />
                 <input 
                   type="text"
-                  value={layout.footer.bgColor}
+                  value={layout.footer.bgColor || '#0b1120'}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, bgColor: e.target.value } })}
-                  className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                  className="w-32 p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ফুটার টেক্সট কালার</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">ফুটার টেক্সট কালার</label>
               <div className="flex items-center gap-3">
                 <input 
                   type="color"
-                  value={layout.footer.textColor}
+                  value={layout.footer.textColor || '#94a3b8'}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, textColor: e.target.value } })}
                   className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0.5"
                 />
                 <input 
                   type="text"
-                  value={layout.footer.textColor}
+                  value={layout.footer.textColor || '#94a3b8'}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, textColor: e.target.value } })}
-                  className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono"
+                  className="w-32 p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
                 />
               </div>
             </div>
+          </div>
 
-            {/* Column 1: About & Compliance */}
-            <div className="md:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-3">
-              <h3 className="font-bold text-slate-900 text-sm">কলাম ১: স্টোর পরিচিতি ও সরকারি লাইসেন্স তথ্য</h3>
+          {/* Column 1: Store Intro & Compliance */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-4">
+            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center">১</span>
+              <span>কলাম ১: স্টোর পরিচিতি, সরকারি লাইসেন্স ও সোশ্যাল মিডিয়া</span>
+            </h3>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">স্টোর পরিচিতি বিবরণ (About Text)</label>
               <textarea 
                 rows={2}
-                value={layout.footer.col1About}
+                value={layout.footer.col1About || ''}
                 onChange={e => setLayout({ ...layout, footer: { ...layout.footer, col1About: e.target.value } })}
                 className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+                placeholder="আমরা দিচ্ছি সেরা মানের পণ্য, দ্রুততম হোম ডেলিভারি..."
               />
-              <div className="grid md:grid-cols-3 gap-3">
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">DBID সনদ নম্বর</label>
                 <input 
                   type="text"
                   value={layout.footer.dbid || ''}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, dbid: e.target.value } })}
-                  placeholder="DBID Number"
-                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                  placeholder="DBID-198273645"
+                  className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
                 />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">BIN নম্বর</label>
                 <input 
                   type="text"
                   value={layout.footer.bin || ''}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, bin: e.target.value } })}
-                  placeholder="BIN Number"
-                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                  placeholder="BIN: 002938475-0101"
+                  className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
                 />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">ট্রেড লাইসেন্স</label>
                 <input 
                   type="text"
                   value={layout.footer.tradeLicense || ''}
                   onChange={e => setLayout({ ...layout, footer: { ...layout.footer, tradeLicense: e.target.value } })}
-                  placeholder="Trade License"
-                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                  placeholder="TRAD/DSCC/019283"
+                  className="w-full p-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
                 />
               </div>
             </div>
 
-            {/* Column 4: Contact & Working Hours */}
-            <div className="md:col-span-2 p-5 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-3">
-              <h3 className="font-bold text-slate-900 text-sm">কলাম ৪: যোগাযোগ ও হেল্পলাইন ঠিকানা</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">হটলাইন নম্বর</label>
-                  <input 
-                    type="text"
-                    value={layout.footer.hotline}
-                    onChange={e => setLayout({ ...layout, footer: { ...layout.footer, hotline: e.target.value } })}
-                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">ইমেইল</label>
-                  <input 
-                    type="text"
-                    value={layout.footer.email}
-                    onChange={e => setLayout({ ...layout, footer: { ...layout.footer, email: e.target.value } })}
-                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-sm"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-600 uppercase mb-1">অফিস / শোরুম ঠিকানা</label>
-                  <input 
-                    type="text"
-                    value={layout.footer.address}
-                    onChange={e => setLayout({ ...layout, footer: { ...layout.footer, address: e.target.value } })}
-                    className="w-full p-2 bg-white border border-slate-200 rounded-xl text-sm"
-                  />
-                </div>
+            {/* Social Media Links */}
+            <div className="pt-2 border-t border-slate-200/80">
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">সোশ্যাল মিডিয়া পেজ লিঙ্কস</label>
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <input 
+                  type="text"
+                  value={layout.footer.facebook || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, facebook: e.target.value } })}
+                  placeholder="Facebook Page URL"
+                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs"
+                />
+                <input 
+                  type="text"
+                  value={layout.footer.whatsapp || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, whatsapp: e.target.value } })}
+                  placeholder="WhatsApp Number / Link"
+                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs"
+                />
+                <input 
+                  type="text"
+                  value={layout.footer.youtube || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, youtube: e.target.value } })}
+                  placeholder="YouTube Channel URL"
+                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs"
+                />
+                <input 
+                  type="text"
+                  value={layout.footer.instagram || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, instagram: e.target.value } })}
+                  placeholder="Instagram URL"
+                  className="p-2 bg-white border border-slate-200 rounded-xl text-xs"
+                />
               </div>
+            </div>
+          </div>
+
+          {/* Column 2: Quick Links */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center">২</span>
+                <span>কলাম ২: প্রয়োজনীয় লিঙ্ক সমূহ (Quick Links)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedLinks = [...(layout.footer.col2Links || [])];
+                  updatedLinks.push({ label: 'নতুন লিঙ্ক', url: `/${tenantId}` });
+                  setLayout({ ...layout, footer: { ...layout.footer, col2Links: updatedLinks } });
+                }}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ লিঙ্ক যোগ করুন</span>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">কলাম ২ শিরোনাম (Column Title)</label>
+              <input 
+                type="text"
+                value={layout.footer.col2Title || 'প্রয়োজনীয় লিঙ্ক'}
+                onChange={e => setLayout({ ...layout, footer: { ...layout.footer, col2Title: e.target.value } })}
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold"
+              />
+            </div>
+
+            {/* Links List */}
+            <div className="space-y-2.5">
+              {(layout.footer.col2Links || []).map((link, lIdx) => (
+                <div key={lIdx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <input 
+                    type="text"
+                    value={link.label}
+                    onChange={e => {
+                      const updated = [...layout.footer.col2Links];
+                      updated[lIdx].label = e.target.value;
+                      setLayout({ ...layout, footer: { ...layout.footer, col2Links: updated } });
+                    }}
+                    placeholder="লিঙ্ক নাম (যেমন: সব পণ্য)"
+                    className="flex-1 p-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
+                  />
+                  <input 
+                    type="text"
+                    value={link.url}
+                    onChange={e => {
+                      const updated = [...layout.footer.col2Links];
+                      updated[lIdx].url = e.target.value;
+                      setLayout({ ...layout, footer: { ...layout.footer, col2Links: updated } });
+                    }}
+                    placeholder="URL লিঙ্ক (যেমন: /store1#products)"
+                    className="flex-1 p-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...layout.footer.col2Links];
+                      updated.splice(lIdx, 1);
+                      setLayout({ ...layout, footer: { ...layout.footer, col2Links: updated } });
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg transition"
+                    title="লিঙ্কটি মুছে ফেলুন"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 3: Customer Care & Policies */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center">৩</span>
+                <span>কলাম ৩: কাস্টমার সাপোর্ট ও পলিসি লিঙ্কস</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedLinks = [...(layout.footer.col3Links || [])];
+                  updatedLinks.push({ label: 'নতুন পলিসি লিঙ্ক', url: '#' });
+                  setLayout({ ...layout, footer: { ...layout.footer, col3Links: updatedLinks } });
+                }}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ লিঙ্ক যোগ করুন</span>
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">কলাম ৩ শিরোনাম (Column Title)</label>
+              <input 
+                type="text"
+                value={layout.footer.col3Title || 'কাস্টমার কেয়ার ও পলিসি'}
+                onChange={e => setLayout({ ...layout, footer: { ...layout.footer, col3Title: e.target.value } })}
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold"
+              />
+            </div>
+
+            {/* Links List */}
+            <div className="space-y-2.5">
+              {(layout.footer.col3Links || []).map((link, lIdx) => (
+                <div key={lIdx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                  <input 
+                    type="text"
+                    value={link.label}
+                    onChange={e => {
+                      const updated = [...layout.footer.col3Links];
+                      updated[lIdx].label = e.target.value;
+                      setLayout({ ...layout, footer: { ...layout.footer, col3Links: updated } });
+                    }}
+                    placeholder="পলিসি নাম (যেমন: ডেলিভারি পলিসি)"
+                    className="flex-1 p-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
+                  />
+                  <input 
+                    type="text"
+                    value={link.url}
+                    onChange={e => {
+                      const updated = [...layout.footer.col3Links];
+                      updated[lIdx].url = e.target.value;
+                      setLayout({ ...layout, footer: { ...layout.footer, col3Links: updated } });
+                    }}
+                    placeholder="URL লিঙ্ক (যেমন: #delivery)"
+                    className="flex-1 p-1.5 border border-slate-200 rounded-lg text-xs font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...layout.footer.col3Links];
+                      updated.splice(lIdx, 1);
+                      setLayout({ ...layout, footer: { ...layout.footer, col3Links: updated } });
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg transition"
+                    title="লিঙ্কটি মুছে ফেলুন"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Column 4: Contact & Helpline */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-4">
+            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center">৪</span>
+              <span>কলাম ৪: যোগাযোগ, হেল্পলাইন ও কাজের সময়</span>
+            </h3>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">কলাম ৪ শিরোনাম (Column Title)</label>
+              <input 
+                type="text"
+                value={layout.footer.col4Title || 'যোগাযোগ ও সাপোর্ট'}
+                onChange={e => setLayout({ ...layout, footer: { ...layout.footer, col4Title: e.target.value } })}
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">হটলাইন ফোন নম্বর</label>
+                <input 
+                  type="text"
+                  value={layout.footer.hotline || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, hotline: e.target.value } })}
+                  placeholder="০১৭০০-০০০০০০"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">সাপোর্ট ইমেইল</label>
+                <input 
+                  type="email"
+                  value={layout.footer.email || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, email: e.target.value } })}
+                  placeholder="support@store.com"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">অফিস / শোরুম পূর্ণ ঠিকানা</label>
+                <input 
+                  type="text"
+                  value={layout.footer.address || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, address: e.target.value } })}
+                  placeholder="রোড নং ৪, হাউস ১২, উত্তরা, ঢাকা - ১২৩০"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">কাজের সময় (Working Hours)</label>
+                <input 
+                  type="text"
+                  value={layout.footer.workingHours || ''}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, workingHours: e.target.value } })}
+                  placeholder="সকাল ১০টা - রাত ১০টা (প্রতিদিন)"
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Bar: Copyright & Payment Badges */}
+          <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 space-y-4">
+            <h3 className="font-bold text-slate-900 text-sm">বটম ফুটার সেটিংস (Bottom Footer & Badges)</h3>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">কপিরাইট টেক্সট</label>
+              <input 
+                type="text"
+                value={layout.footer.copyrightText || 'সর্বস্বত্ব সংরক্ষিত।'}
+                onChange={e => setLayout({ ...layout, footer: { ...layout.footer, copyrightText: e.target.value } })}
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  checked={layout.footer.showPaymentBadges ?? true}
+                  onChange={e => setLayout({ ...layout, footer: { ...layout.footer, showPaymentBadges: e.target.checked } })}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <span className="text-sm font-bold text-slate-800">পেমেন্ট মেথড ব্যাজ (bKash, Nagad, Rocket, VISA, MasterCard, COD) প্রদর্শন করুন</span>
+              </label>
             </div>
           </div>
         </div>
