@@ -1,110 +1,326 @@
 'use client';
 // @ts-nocheck
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useCartStore } from '@/store/cartStore';
+import Link from 'next/link';
 import { 
-  Store, 
   ShoppingBag, 
+  Search, 
+  Menu, 
+  X, 
   Phone, 
   Mail, 
-  ArrowRight, 
+  MapPin, 
   ShieldCheck, 
   Truck, 
-  Clock, 
-  Search, 
-  Star, 
-  ChevronLeft, 
-  ChevronRight, 
-  X, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  Sparkles, 
-  Flame, 
-  Layers, 
-  Check, 
+  RotateCcw, 
+  Headphones, 
   ExternalLink,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  Eye,
   Award,
-  Globe,
-  Tag
+  Clock,
+  Sparkles,
+  Zap,
+  Check,
+  ShoppingCart
 } from 'lucide-react';
-import Link from 'next/link';
 
-export default function TenantStorefrontPage() {
+export default function StorefrontHomePage() {
   const params = useParams();
   const router = useRouter();
   const tenantId = (params?.tenant as string) || '';
 
-  // Language State: 'bn' | 'en'
-  const [lang, setLang] = useState<'bn' | 'en'>('bn');
+  const { items: cartItems, addItem: addToCart, removeItem: removeFromCart, updateQuantity, getSubtotal } = useCartStore();
 
-  // Cart State from Zustand
-  const { items: cartItems, addItem, removeItem, updateQuantity, getSubtotal } = useCartStore();
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartToast, setCartToast] = useState<string | null>(null);
-
-  // Store Meta & Layout State
-  const [generalSettings, setGeneralSettings] = useState<any>(null);
-  const [customizerConfig, setCustomizerConfig] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filter State
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Slider State
+  // Active Slide Index for Cinematic HUD Slider
   const [activeSlide, setActiveSlide] = useState(0);
+  const [clockTime, setClockTime] = useState('--:--:--');
 
-  // Flash Sale Countdown State
-  const [timeLeft, setTimeLeft] = useState({ hours: 14, minutes: 36, seconds: 48 });
+  // Customizer Configuration State
+  const [config, setConfig] = useState<any>(null);
 
+  // Live Clock for HUD bar
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.seconds > 0) return { ...prev, seconds: prev.seconds - 1 };
-        if (prev.minutes > 0) return { ...prev, minutes: 59, seconds: 59 };
-        if (prev.hours > 0) return { ...prev, hours: prev.hours - 1, minutes: 59, seconds: 59 };
-        return { hours: 23, minutes: 59, seconds: 59 };
-      });
+      const now = new Date();
+      setClockTime(now.toTimeString().slice(0, 8));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch Store Data
+  // Fetch Store Data (Categories, Products, Layout Config)
   useEffect(() => {
     if (!tenantId) return;
 
-    const fetchAllData = async () => {
+    const fetchStoreData = async () => {
       try {
-        // 1. General settings
-        const genSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/general`));
-        if (genSnap.exists()) {
-          const gData = genSnap.data();
-          setGeneralSettings(gData);
-          if (gData.defaultLanguage) setLang(gData.defaultLanguage);
-        }
+        // 1. Fetch Categories
+        const catSnap = await getDocs(collection(db, 'tenants/' + tenantId + '/categories'));
+        const catList = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setCategories(catList);
 
-        // 2. Homepage customizer layout
-        const layoutSnap = await getDoc(doc(db, `tenants/${tenantId}/settings/homepage_layout`));
-        if (layoutSnap.exists() && layoutSnap.data().storefrontConfig) {
-          setCustomizerConfig(layoutSnap.data().storefrontConfig);
-        }
+        // 2. Fetch Products
+        const prodSnap = await getDocs(collection(db, 'tenants/' + tenantId + '/products'));
+        const prodList = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setProducts(prodList);
 
-        // 3. Categories
-        const catSnap = await getDocs(collection(db, `tenants/${tenantId}/categories`));
-        const cList = catSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setCategories(cList);
+        // 3. Fetch Layout & General Settings
+        const layoutSnap = await getDoc(doc(db, 'tenants/' + tenantId + '/settings/homepage_layout'));
+        let layoutData = layoutSnap.exists() ? layoutSnap.data()?.storefrontConfig : null;
 
-        // 4. Products
-        const prodSnap = await getDocs(collection(db, `tenants/${tenantId}/products`));
-        const pList = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setProducts(pList);
+        const genSnap = await getDoc(doc(db, 'tenants/' + tenantId + '/settings/general'));
+        const genData = genSnap.exists() ? genSnap.data() : null;
+
+        // Default Rich Configuration if not customized yet
+        const defaultSlides = [
+          {
+            id: '1',
+            eyebrow: '📱 গ্যাজেট কর্নার',
+            title: 'লেটেস্ট গ্যাজেট, হাতের নাগালে',
+            subtitle: 'স্মার্টফোন এক্সেসরিজ, ইয়ারবাড, চার্জার ও ট্রেন্ডি সব গ্যাজেট — আসল মান, সেরা দামে।',
+            giantWatermark: 'GADGET',
+            themeColor: '#2FD4C8',
+            skuCode: 'GDGT-01 · ইলেকট্রনিক্স',
+            bgImage: 'https://images.unsplash.com/photo-1526406915894-7bcd65f60845?auto=format&fit=crop&w=1600&q=80',
+            cameoImage: 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?auto=format&fit=crop&w=400&q=80',
+            stat1Num: '৫০০+',
+            stat1Lbl: 'প্রোডাক্ট',
+            stat2Num: 'ওয়ারেন্টি',
+            stat2Lbl: 'সহ পণ্য',
+            ctaText: 'কিনুন →',
+            ctaLink: '/' + tenantId + '/checkout',
+            secondaryCtaText: 'সব দেখুন',
+            secondaryCtaLink: '#'
+          },
+          {
+            id: '2',
+            eyebrow: '👗 ফ্যাশন হাউজ',
+            title: 'ফ্যাশন ও পোশাক, আপনার স্টাইলে',
+            subtitle: 'ছেলে ও মেয়েদের ট্রেন্ডি পোশাক, জুতা ও এক্সেসরিজ — মানসম্মত ও সাশ্রয়ী দামে।',
+            giantWatermark: 'FASHION',
+            themeColor: '#F0609B',
+            skuCode: 'FASH-02 · ক্লথিং',
+            bgImage: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1600&q=80',
+            cameoImage: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=400&q=80',
+            stat1Num: 'নতুন',
+            stat1Lbl: 'কালেকশন',
+            stat2Num: 'সব',
+            stat2Lbl: 'সাইজ এভেইলেবল',
+            ctaText: 'কিনুন →',
+            ctaLink: '/' + tenantId + '/checkout',
+            secondaryCtaText: 'নতুন কালেকশন',
+            secondaryCtaLink: '#'
+          },
+          {
+            id: '3',
+            eyebrow: '🛒 ডেইলি নিডস',
+            title: 'গ্রোসারি ও দৈনন্দিন প্রয়োজন',
+            subtitle: 'চাল, ডাল, তেল থেকে শুরু করে ঘরের নিত্যপ্রয়োজনীয় সব পণ্য এক জায়গায়, কম দামে।',
+            giantWatermark: 'GROCERY',
+            themeColor: '#7CB518',
+            skuCode: 'GROC-03 · নিত্যপণ্য',
+            bgImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80',
+            cameoImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+            stat1Num: '১০০০+',
+            stat1Lbl: 'পণ্য স্টক',
+            stat2Num: 'দ্রুত',
+            stat2Lbl: 'ডেলিভারি সুবিধা',
+            ctaText: 'কিনুন →',
+            ctaLink: '/' + tenantId + '/checkout',
+            secondaryCtaText: 'অফার দেখুন',
+            secondaryCtaLink: '#'
+          }
+        ];
+
+        const defaultSections = [
+          {
+            id: 'sec_cat_showcase',
+            type: 'category_grid',
+            enabled: true,
+            title: 'জনপ্রিয় ক্যাটাগরি সমূহ',
+            subtitle: 'পছন্দের ক্যাটাগরি নির্বাচন করে সহজে কেনাকাটা করুন',
+            style: 'circle'
+          },
+          {
+            id: 'sec_prod_hot',
+            type: 'product_grid',
+            enabled: true,
+            title: '🔥 স্পেশাল অফার ও হট ডিলস',
+            subtitle: 'গ্রাহকদের পছন্দের বাছাইকৃত সেরা পণ্যসমূহ আকর্ষণীয় মূল্যে',
+            category: 'all',
+            limit: 8,
+            columns: 4,
+            sortBy: 'featured',
+            viewAllLink: '#'
+          },
+          {
+            id: 'sec_promo_banners',
+            type: 'banner_grid',
+            enabled: true,
+            title: 'এক্সক্লুসিভ অফার ও ক্যাম্পেইন',
+            subtitle: 'সেরা ব্র্যান্ড ও প্রোডাক্টে সীমিত সময়ের বিশেষ ছাড়',
+            columnsCount: 2,
+            banners: [
+              {
+                id: 'b1',
+                title: 'নতুন সিজন ফ্যাশন সেল',
+                discount: '৪০% পর্যন্ত মূল্যছাড়',
+                imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80',
+                btnText: 'অর্ডার করুন',
+                linkUrl: '#'
+              },
+              {
+                id: 'b2',
+                title: 'স্মার্ট লাইফস্টাইল গ্যাজেট',
+                discount: 'সেরা দামে সেরা গ্যাজেট',
+                imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80',
+                btnText: 'কালেকশন দেখুন',
+                linkUrl: '#'
+              }
+            ]
+          },
+          {
+            id: 'sec_prod_gadgets',
+            type: 'product_grid',
+            enabled: true,
+            title: '📱 গ্যাজেট ও ইলেকট্রনিক্স কর্নার',
+            subtitle: 'স্মার্টফোন এক্সেসরিজ, ইয়ারবাড, চার্জার ও ট্রেন্ডি সব গ্যাজেট',
+            category: 'ইলেকট্রনিক্স',
+            limit: 8,
+            columns: 4,
+            sortBy: 'newest',
+            viewAllLink: '#'
+          },
+          {
+            id: 'sec_flash_cta',
+            type: 'cta_banner',
+            enabled: true,
+            badge: '৫০% পর্যন্ত ছাড়',
+            title: 'স্পেশাল ফ্ল্যাশ ডিল ২০২৬',
+            subtitle: 'সীমিত সময়ের এই অফার উপভোগ করতে এখনই অর্ডার প্লেস করুন! ১০০% অরিজিনাল পণ্য ও ক্যাশ অন ডেলিভারি।',
+            btnText: 'অর্ডার কনফার্ম করুন',
+            btnLink: '/' + tenantId + '/checkout',
+            gradient: 'from-amber-600 via-rose-600 to-indigo-900'
+          },
+          {
+            id: 'sec_prod_fashion',
+            type: 'product_grid',
+            enabled: true,
+            title: '👗 ট্রেন্ডি ফ্যাশন ও পোশাক কালেকশন',
+            subtitle: 'ছেলে ও মেয়েদের মানসম্মত পোশাক ও জুতা সাশ্রয়ী দামে',
+            category: 'ফ্যাশন',
+            limit: 8,
+            columns: 4,
+            sortBy: 'newest',
+            viewAllLink: '#'
+          },
+          {
+            id: 'sec_services_grid',
+            type: 'service_grid',
+            enabled: true,
+            title: 'আমাদের প্রফেশনাল সার্ভিস',
+            subtitle: 'নির্ভরযোগ্য ও দ্রুত গতির আইটি, সফটওয়্যার ও কাস্টমার সার্ভিস',
+            services: [
+              {
+                id: 's1',
+                icon: '🌐',
+                title: 'ওয়েবসাইট ও ই-কমার্স সল্যুশন',
+                desc: 'আপনার ব্যবসার জন্য আধুনিক ও দ্রুতগতির অনলাইন শপ বা কাস্টম ওয়েবসাইট ডিজাইন।',
+                btnText: 'বিস্তারিত জানুন',
+                linkUrl: '#'
+              },
+              {
+                id: 's2',
+                icon: '🛒',
+                title: 'দোকান POS ও ইনভেন্টরি',
+                desc: 'যেকোনো দোকানের সেলস, স্টক ও ক্যাশ কালেকশন ম্যানেজ করার জন্য আধুনিক POS সফটওয়্যার।',
+                btnText: 'বিস্তারিত জানুন',
+                linkUrl: '#'
+              },
+              {
+                id: 's3',
+                icon: '🏫',
+                title: 'স্কুল ও প্রতিষ্ঠান সফটওয়্যার',
+                desc: 'রেজাল্ট প্রসেসিং, স্টুডেন্ট ডাটাবেস ও অনলাইন ফি কালেকশন সহ পূর্ণাঙ্গ সমাধান।',
+                btnText: 'বিস্তারিত জানুন',
+                linkUrl: '#'
+              }
+            ]
+          },
+          {
+            id: 'sec_trust_strip',
+            type: 'trust_strip',
+            enabled: true,
+            title: 'কেন আমাদের থেকে কেনাকাটা করবেন?'
+          }
+        ];
+
+        const mergedConfig = {
+          header: {
+            topBarEnabled: layoutData?.header?.topBarEnabled ?? true,
+            topBarText: layoutData?.header?.topBarText || '🎉 সারাদেশে ক্যাশ অন ডেলিভারি সুবিধা! হটলাইন: ০১৭১১-০০০০০০',
+            topBarPhone: layoutData?.header?.topBarPhone || genData?.phone || '০১৭১১-০০০০০০',
+            topBarEmail: layoutData?.header?.topBarEmail || genData?.email || 'support@yourstore.com',
+            storeName: layoutData?.header?.storeName || genData?.businessName || tenantId.toUpperCase(),
+            tagline: layoutData?.header?.tagline || genData?.tagline || 'অফিসিয়াল অনলাইন শপ',
+            logoUrl: layoutData?.header?.logoUrl || genData?.logoUrl || '',
+            menuItems: layoutData?.header?.menuItems || [
+              { id: '1', label: 'হোম', url: '/' + tenantId },
+              { id: '2', label: 'সকল প্রোডাক্ট', url: '#' },
+              { id: '3', label: 'হট ডিলস', url: '#' },
+              { id: '4', label: 'যোগাযোগ', url: '#' }
+            ]
+          },
+          heroSlider: {
+            enabled: layoutData?.heroSlider?.enabled ?? true,
+            autoplaySpeed: layoutData?.heroSlider?.autoplaySpeed || 6000,
+            showLiveBadge: layoutData?.heroSlider?.showLiveBadge ?? true,
+            slides: (layoutData?.heroSlider?.slides && layoutData.heroSlider.slides.length > 0)
+              ? layoutData.heroSlider.slides
+              : defaultSlides
+          },
+          sections: (layoutData?.sections && layoutData.sections.length > 0)
+            ? layoutData.sections
+            : defaultSections,
+          footer: {
+            col1About: layoutData?.footer?.col1About || 'আমরা দিচ্ছি সেরা মানের পণ্য, দ্রুততম হোম ডেলিভারি এবং সহজ রিটার্ন পলিসি। গ্রাহকের সন্তুষ্টিই আমাদের প্রথম অগ্রাধিকার।',
+            hotline: layoutData?.footer?.hotline || genData?.phone || '০১৭১১-০০০০০০',
+            email: layoutData?.footer?.email || genData?.email || 'support@yourstore.com',
+            address: layoutData?.footer?.address || genData?.officeAddress || 'ঢাকা, বাংলাদেশ',
+            dbid: genData?.compliance?.dbidNumber || 'DBID-198273645',
+            bin: genData?.compliance?.binNumber || 'BIN: 002938475-0101',
+            tradeLicense: genData?.compliance?.tradeLicenseNo || 'TRAD/DSCC/019283',
+            col2Links: layoutData?.footer?.col2Links || [
+              { label: 'হোম পেজ', url: '/' + tenantId },
+              { label: 'সকল প্রোডাক্ট', url: '#' },
+              { label: 'হট ডিলস', url: '#' },
+              { label: 'অর্ডার ট্র্যাক করুন', url: '#' }
+            ],
+            col3Links: layoutData?.footer?.col3Links || [
+              { label: 'ডেলিভারি পলিসি', url: '#' },
+              { label: 'রিটার্ন ও রিফান্ড পলিসি', url: '#' },
+              { label: 'প্রাইভেসি পলিসি', url: '#' },
+              { label: 'শর্তাবলী', url: '#' }
+            ]
+          }
+        };
+
+        setConfig(mergedConfig);
       } catch (err) {
         console.error('Error fetching storefront data:', err);
       } finally {
@@ -112,1086 +328,994 @@ export default function TenantStorefrontPage() {
       }
     };
 
-    fetchAllData();
+    fetchStoreData();
   }, [tenantId]);
 
-  // Merge Config with Defaults
-  const config = useMemo(() => {
-    const defaultSlides = [
-      {
-        id: '1',
-        badge: lang === 'bn' ? '🔥 মেগা সেল অফার' : '🔥 Mega Sale Offer',
-        title: lang === 'bn' ? 'প্রিমিয়াম কোয়ালিটি লাইফস্টাইল ও গ্যাজেট কালেকশন' : 'Premium Lifestyle & Gadget Collections',
-        subtitle: lang === 'bn' ? '১০০% অরিজিনাল পণ্য ও দ্রুততম সময়ে হোম ডেলিভারি নিশ্চয়তা।' : '100% genuine products with fast doorstep delivery nationwide.',
-        bgImage: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80',
-        ctaText: lang === 'bn' ? 'এখনই কিনুন' : 'Shop Now',
-        ctaLink: `/${tenantId}#products`,
-        secondaryCtaText: lang === 'bn' ? 'হট ডিলস' : 'Hot Deals',
-        secondaryCtaLink: `/${tenantId}#offers`
-      },
-      {
-        id: '2',
-        badge: lang === 'bn' ? '✨ ট্রেন্ডিং কালেকশন ২০২৬' : '✨ Trending 2026 Collection',
-        title: lang === 'bn' ? 'সেরা মূল্যে আকর্ষণীয় ও ইউনিক প্রডাক্টের সমাহার' : 'Discover Extraordinary Finds at Unbeatable Prices',
-        subtitle: lang === 'bn' ? 'ক্যাশ অন ডেলিভারিতে ঝামেলাহীন কেনাকাটা করুন যেকোনো প্রান্তে।' : 'Enjoy safe Cash on Delivery shopping with instant support.',
-        bgImage: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=1920&q=80',
-        ctaText: lang === 'bn' ? 'অর্ডার করুন' : 'Order Now',
-        ctaLink: `/${tenantId}#products`,
-        secondaryCtaText: lang === 'bn' ? 'অফার দেখুন' : 'View Offers',
-        secondaryCtaLink: `/${tenantId}#offers`
-      }
-    ];
-
-    const fallbackStoreName = generalSettings?.businessName || tenantId.toUpperCase();
-
-    return {
-      header: {
-        topBarEnabled: customizerConfig?.header?.topBarEnabled ?? true,
-        topBarText: customizerConfig?.header?.topBarText || (lang === 'bn' ? '🎉 সারাদেশে দ্রুততম ক্যাশ অন ডেলিভারি সুবিধা!' : '🎉 Fast Cash on Delivery Available Nationwide!'),
-        topBarPhone: customizerConfig?.header?.topBarPhone || generalSettings?.phone || '01700-000000',
-        topBarEmail: customizerConfig?.header?.topBarEmail || generalSettings?.email || 'support@yourstore.com',
-        topBarBg: customizerConfig?.header?.topBarBg || '#0f172a',
-        topBarTextCol: customizerConfig?.header?.topBarTextCol || '#f8fafc',
-        headerBg: customizerConfig?.header?.headerBg || '#ffffff',
-        headerTextCol: customizerConfig?.header?.headerTextCol || '#0f172a',
-        sticky: customizerConfig?.header?.sticky ?? true,
-        showStoreName: customizerConfig?.header?.showStoreName ?? true,
-        showTagline: customizerConfig?.header?.showTagline ?? true,
-        storeName: customizerConfig?.header?.storeName || fallbackStoreName,
-        tagline: customizerConfig?.header?.tagline || (lang === 'bn' ? 'অফিসিয়াল অনলাইন স্টোর' : 'Official Online Store'),
-        logoUrl: customizerConfig?.header?.logoUrl || generalSettings?.logoUrl || '',
-        fontFamily: customizerConfig?.header?.fontFamily || 'Hind Siliguri',
-        primaryColor: customizerConfig?.header?.primaryColor || '#2563eb',
-        accentColor: customizerConfig?.header?.accentColor || '#f59e0b',
-        menuItems: customizerConfig?.header?.menuItems || [
-          { id: '1', label: lang === 'bn' ? 'হোম' : 'Home', url: `/${tenantId}` },
-          { id: '2', label: lang === 'bn' ? 'সকল প্রোডাক্ট' : 'All Products', url: `/${tenantId}#products` },
-          { id: '3', label: lang === 'bn' ? 'হট অফার' : 'Hot Offers', url: `/${tenantId}#offers` },
-          { id: '4', label: lang === 'bn' ? 'যোগাযোগ' : 'Contact', url: `/${tenantId}#contact` }
-        ]
-      },
-      heroSlider: {
-        enabled: customizerConfig?.heroSlider?.enabled ?? true,
-        autoplaySpeed: customizerConfig?.heroSlider?.autoplaySpeed || 5000,
-        slides: customizerConfig?.heroSlider?.slides?.length > 0 ? customizerConfig.heroSlider.slides : defaultSlides
-      },
-      categories: {
-        enabled: customizerConfig?.categories?.enabled ?? true,
-        title: customizerConfig?.categories?.title || (lang === 'bn' ? 'জনপ্রিয় ক্যাটাগরি সমূহ' : 'Explore Top Categories'),
-        subtitle: customizerConfig?.categories?.subtitle || (lang === 'bn' ? 'পছন্দের ক্যাটাগরি নির্বাচন করে সহজে কেনাকাটা করুন' : 'Browse our wide range of premium collections'),
-        style: customizerConfig?.categories?.style || 'circle'
-      },
-      products: {
-        showTrendingCarousel: customizerConfig?.products?.showTrendingCarousel ?? true,
-        trendingTitle: customizerConfig?.products?.trendingTitle || (lang === 'bn' ? 'ট্রেন্ডিং ও সর্বাধিক বিক্রিত পণ্য' : 'Trending & Best Sellers'),
-        showFeaturedGrid: customizerConfig?.products?.showFeaturedGrid ?? true,
-        featuredTitle: customizerConfig?.products?.featuredTitle || (lang === 'bn' ? 'আমাদের বিশেষ কালেকশন' : 'Featured Products'),
-        featuredSubtitle: customizerConfig?.products?.featuredSubtitle || (lang === 'bn' ? 'গ্রাহকদের পছন্দের বাছাইকৃত সেরা পণ্যসমূহ' : 'Curated premium items with verified reviews'),
-        gridColumns: customizerConfig?.products?.gridColumns || 4
-      },
-      banners: {
-        showPromoBanners: customizerConfig?.banners?.showPromoBanners ?? true,
-        items: customizerConfig?.banners?.items || [
-          {
-            id: '1',
-            title: lang === 'bn' ? 'নতুন সিজন ফ্যাশন সেল' : 'New Season Fashion Sale',
-            discount: lang === 'bn' ? '৪০% পর্যন্ত মূল্যছাড়' : 'Up to 40% Off',
-            imageUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80',
-            btnText: lang === 'bn' ? 'অর্ডার করুন' : 'Shop Now',
-            linkUrl: `/${tenantId}#products`
-          },
-          {
-            id: '2',
-            title: lang === 'bn' ? 'স্মার্ট লাইফস্টাইল গ্যাজেট' : 'Smart Lifestyle Gadgets',
-            discount: lang === 'bn' ? 'সেরা দামে সেরা গ্যাজেট' : 'Best Quality Assured',
-            imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80',
-            btnText: lang === 'bn' ? 'কালেকশন দেখুন' : 'Explore Now',
-            linkUrl: `/${tenantId}#products`
-          }
-        ],
-        showFlashSale: customizerConfig?.banners?.showFlashSale ?? true,
-        flashSaleTitle: customizerConfig?.banners?.flashSaleTitle || (lang === 'bn' ? 'স্পেশাল ফ্ল্যাশ ডিল ২০২৬' : 'Exclusive Flash Deal 2026'),
-        flashSaleSubtitle: customizerConfig?.banners?.flashSaleSubtitle || (lang === 'bn' ? 'সীমিত সময়ের এই অফার উপভোগ করতে এখনই অর্ডার প্লেস করুন!' : 'Grab your favorite items before timer runs out!'),
-        flashSaleDiscount: customizerConfig?.banners?.flashSaleDiscount || (lang === 'bn' ? '৫০% পর্যন্ত ছাড়' : 'Up to 50% Off'),
-        flashSaleLink: customizerConfig?.banners?.flashSaleLink || `/${tenantId}/checkout`
-      },
-      footer: {
-        bgColor: customizerConfig?.footer?.bgColor || '#0b1120',
-        textColor: customizerConfig?.footer?.textColor || '#94a3b8',
-        col1About: customizerConfig?.footer?.col1About || (lang === 'bn' ? 'আমরা দিচ্ছি সেরা মানের পণ্য, দ্রুততম হোম ডেলিভারি এবং সহজ রিটার্ন পলিসি। গ্রাহকের সন্তুষ্টিই আমাদের প্রথম অগ্রাধিকার।' : 'Delivering authentic premium products nationwide with fast delivery and easy returns.'),
-        dbid: generalSettings?.compliance?.dbidNumber || customizerConfig?.footer?.dbid || 'DBID-198273645',
-        bin: generalSettings?.compliance?.binNumber || customizerConfig?.footer?.bin || 'BIN: 002938475-0101',
-        tradeLicense: generalSettings?.compliance?.tradeLicenseNo || customizerConfig?.footer?.tradeLicense || 'TRAD/DSCC/019283',
-        facebook: customizerConfig?.footer?.facebook || '',
-        whatsapp: customizerConfig?.footer?.whatsapp || '',
-        youtube: customizerConfig?.footer?.youtube || '',
-        instagram: customizerConfig?.footer?.instagram || '',
-        col2Title: customizerConfig?.footer?.col2Title || (lang === 'bn' ? 'প্রয়োজনীয় লিঙ্ক' : 'Quick Links'),
-        col2Links: customizerConfig?.footer?.col2Links || [
-          { label: lang === 'bn' ? 'হোম পেজ' : 'Home', url: `/${tenantId}` },
-          { label: lang === 'bn' ? 'সকল প্রোডাক্ট' : 'All Products', url: `/${tenantId}#products` },
-          { label: lang === 'bn' ? 'হট অফার' : 'Hot Offers', url: `/${tenantId}#offers` },
-          { label: lang === 'bn' ? 'চেকআউট' : 'Checkout', url: `/${tenantId}/checkout` }
-        ],
-        col3Title: customizerConfig?.footer?.col3Title || (lang === 'bn' ? 'কাস্টমার কেয়ার ও পলিসি' : 'Customer Care & Policies'),
-        col3Links: customizerConfig?.footer?.col3Links || [
-          { label: lang === 'bn' ? 'ডেলিভারি পলিসি' : 'Delivery Policy', url: '#' },
-          { label: lang === 'bn' ? 'রিটার্ন ও রিফান্ড পলিসি' : 'Return & Refund Policy', url: '#' },
-          { label: lang === 'bn' ? 'প্রাইভেসি পলিসি' : 'Privacy Policy', url: '#' },
-          { label: lang === 'bn' ? 'শর্তাবলী' : 'Terms & Conditions', url: '#' }
-        ],
-        col4Title: customizerConfig?.footer?.col4Title || (lang === 'bn' ? 'যোগাযোগ ও হেল্পলাইন' : 'Contact & Helpline'),
-        hotline: customizerConfig?.footer?.hotline || generalSettings?.phone || '01700-000000',
-        email: customizerConfig?.footer?.email || generalSettings?.email || 'support@yourstore.com',
-        address: customizerConfig?.footer?.address || generalSettings?.officeAddress || 'ঢাকা, বাংলাদেশ',
-        workingHours: customizerConfig?.footer?.workingHours || (lang === 'bn' ? 'সকাল ১০টা - রাত ১০টা (প্রতিদিন)' : '10:00 AM - 10:00 PM (Daily)'),
-        copyrightText: customizerConfig?.footer?.copyrightText || (lang === 'bn' ? 'সর্বস্বত্ব সংরক্ষিত।' : 'All rights reserved.'),
-        showPaymentBadges: customizerConfig?.footer?.showPaymentBadges ?? true
-      }
-    };
-  }, [customizerConfig, generalSettings, tenantId, lang]);
-
-  // Auto Slider Effect
+  // Autoplay for Cinematic HUD Slider
   useEffect(() => {
-    if (!config.heroSlider.enabled || config.heroSlider.slides.length <= 1) return;
+    if (!config?.heroSlider?.enabled || !config?.heroSlider?.slides?.length) return;
+    const slidesLen = config.heroSlider.slides.length;
+    if (slidesLen <= 1) return;
+
     const interval = setInterval(() => {
-      setActiveSlide(prev => (prev + 1) % config.heroSlider.slides.length);
-    }, config.heroSlider.autoplaySpeed);
+      setActiveSlide(prev => (prev + 1) % slidesLen);
+    }, config.heroSlider.autoplaySpeed || 6000);
+
     return () => clearInterval(interval);
-  }, [config.heroSlider]);
+  }, [config?.heroSlider]);
 
-  // Display Products Filtered
-  const filteredProducts = useMemo(() => {
-    let list = products;
-    if (selectedCategory !== 'all') {
-      list = list.filter(p => p.category?.toLowerCase() === selectedCategory.toLowerCase());
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(p => p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
-    }
-    return list;
-  }, [products, selectedCategory, searchQuery]);
-
-  // Fallback Sample Products if Store has 0 products
+  // Rich Demo Products fallback if store has 0 products
   const displayProducts = useMemo(() => {
-    if (filteredProducts.length > 0) return filteredProducts;
-    if (products.length > 0) return filteredProducts;
+    if (products.length > 0) return products;
 
-    // Rich initial demo products
     return [
       {
-        id: 'sample-1',
-        title: lang === 'bn' ? 'আল্ট্রা স্লিম স্মার্টওয়াচ সিরিজ ৯ (AMOLED HD Display)' : 'Ultra Slim Smartwatch Series 9 (AMOLED HD)',
-        category: 'স্মার্ট গ্যাজেটস',
-        regularPrice: 3800,
-        salePrice: 2850,
-        stock: 45,
-        images: ['https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? '২৫% ছাড়' : '25% OFF',
-        rating: 5.0
+        id: 'demo_1',
+        title: 'ওয়্যারলেস ব্লুটুথ হেডফোন প্রো - বাসের জন্য পারফেক্ট',
+        price: 1850,
+        originalPrice: 2200,
+        category: 'ইলেকট্রনিক্স',
+        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'
       },
       {
-        id: 'sample-2',
-        title: lang === 'bn' ? 'নয়েজ ক্যানসেলিং ওয়্যারলেস ব্লুটুথ হেডফোন প্রো' : 'Active Noise Cancelling Wireless Headphones Pro',
-        category: 'স্মার্ট গ্যাজেটস',
-        regularPrice: 4500,
-        salePrice: 3200,
-        stock: 30,
-        images: ['https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? 'বেস্টসেলার' : 'BESTSELLER',
-        rating: 4.9
+        id: 'demo_2',
+        title: 'স্মার্ট ফিটনেস ট্র্যাকার ওয়াচ উইথ হার্ট রেট সেন্সর',
+        price: 2450,
+        originalPrice: 2800,
+        category: 'ইলেকট্রনিক্স',
+        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80'
       },
       {
-        id: 'sample-3',
-        title: lang === 'bn' ? 'প্রিমিয়াম জেনুইন লেদার ওয়ালেট ও বেল্ট এক্সক্লুসিভ কম্বো' : 'Premium Genuine Leather Wallet & Belt Combo Set',
-        category: 'ফ্যাশন & ক্লথিং',
-        regularPrice: 2200,
-        salePrice: 1550,
-        stock: 60,
-        images: ['https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? 'হট ডিল' : 'HOT DEAL',
-        rating: 4.8
+        id: 'demo_3',
+        title: 'প্রিমিয়াম লেদার ক্যাজুয়াল শু - ট্রেন্ডি ও আরামদায়ক',
+        price: 3200,
+        originalPrice: 3800,
+        category: 'ফ্যাশন',
+        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'
       },
       {
-        id: 'sample-4',
-        title: lang === 'bn' ? 'ক্লাসিক ক্রোনোগ্রাফ ওয়াটারপ্রুফ রিস্ট ওয়াচ ফর মেন' : 'Classic Waterproof Chronograph Wrist Watch for Men',
-        category: 'লাক্সারি ঘড়ি',
-        regularPrice: 5200,
-        salePrice: 3950,
-        stock: 25,
-        images: ['https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? 'নিউ' : 'NEW',
-        rating: 4.9
+        id: 'demo_4',
+        title: 'ক্লাসিক প্রিমিয়াম মেনস স্লিম ফিট কটন শার্ট',
+        price: 1250,
+        originalPrice: 1500,
+        category: 'ফ্যাশন',
+        image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80'
       },
       {
-        id: 'sample-5',
-        title: lang === 'bn' ? 'এয়ার কুশন লাইটওয়েট রানিং স্নিকার্স স্পোর্টস শু' : 'Air Cushion Lightweight Breathable Running Shoes',
-        category: 'প্রিমিয়াম জুতা',
-        regularPrice: 3200,
-        salePrice: 2400,
-        stock: 40,
-        images: ['https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? 'জনপ্রিয়' : 'POPULAR',
-        rating: 4.7
+        id: 'demo_5',
+        title: 'পোর্টেবল ডিজিটাল হ্যাঙ্গিং স্কেল (৫০ কেজি পর্যন্ত)',
+        price: 260,
+        originalPrice: 290,
+        category: 'ইলেকট্রনিক্স',
+        image: 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?auto=format&fit=crop&w=600&q=80'
       },
       {
-        id: 'sample-6',
-        title: lang === 'bn' ? 'মিনি পোর্টেবল ব্লুটুথ স্পিকার (হেভি মেগা বেস)' : 'Mini Portable Wireless Bluetooth Speaker with Bass',
-        category: 'স্মার্ট গ্যাজেটস',
-        regularPrice: 1800,
-        salePrice: 1250,
-        stock: 80,
-        images: ['https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=600&q=80'],
-        badge: lang === 'bn' ? 'অফার' : 'SPECIAL',
-        rating: 4.8
+        id: 'demo_6',
+        title: 'ফ্রেশ এ৪ সাইজ পেপার (৮০ জিএসএম) - ১ রিম ৫০০ শীট',
+        price: 440,
+        originalPrice: 480,
+        category: 'অফিস স্টেশনারি',
+        image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'demo_7',
+        title: 'অর্গানিক খাঁটি মধু (সুন্দরবনের প্রাকৃতিক চাকের মধু)',
+        price: 650,
+        originalPrice: 750,
+        category: 'গ্রোসারি',
+        image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80'
+      },
+      {
+        id: 'demo_8',
+        title: 'এক্সক্লুসিভ উইমেনস হ্যান্ডব্যাগ - প্রিমিয়াম ফিনিশিং',
+        price: 1950,
+        originalPrice: 2400,
+        category: 'ফ্যাশন',
+        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80'
       }
     ];
-  }, [filteredProducts, products, lang]);
+  }, [products]);
 
-  // Display Categories
+  // Demo Categories fallback
   const displayCategories = useMemo(() => {
     if (categories.length > 0) return categories;
-    return [
-      { id: 'cat-fashion', name: lang === 'bn' ? 'ফ্যাশন & ক্লথিং' : 'Fashion & Apparel', slug: 'fashion', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=300&q=80' },
-      { id: 'cat-gadget', name: lang === 'bn' ? 'স্মার্ট গ্যাজেটস' : 'Smart Gadgets', slug: 'gadgets', imageUrl: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=300&q=80' },
-      { id: 'cat-watch', name: lang === 'bn' ? 'লাক্সারি ঘড়ি' : 'Luxury Watches', slug: 'watches', imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=300&q=80' },
-      { id: 'cat-shoes', name: lang === 'bn' ? 'প্রিমিয়াম জুতা' : 'Shoes & Footwear', slug: 'shoes', imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80' },
-      { id: 'cat-home', name: lang === 'bn' ? 'হোম & লিভিং' : 'Home & Living', slug: 'home', imageUrl: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=300&q=80' }
-    ];
-  }, [categories, lang]);
 
-  // Add to Cart
+    return [
+      { id: 'c1', name: 'ইলেকট্রনিক্স', icon: '📱', image: 'https://images.unsplash.com/photo-1526406915894-7bcd65f60845?auto=format&fit=crop&w=400&q=80' },
+      { id: 'c2', name: 'ফ্যাশন', icon: '👗', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=400&q=80' },
+      { id: 'c3', name: 'গ্রোসারি', icon: '🛒', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80' },
+      { id: 'c4', name: 'কম্পিউটার', icon: '💻', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=400&q=80' },
+      { id: 'c5', name: 'অফিস স্টেশনারি', icon: '📝', image: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=400&q=80' }
+    ];
+  }, [categories]);
+
+  // Handle Add to Cart
   const handleAddToCart = (product: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    addItem({
+    addToCart({
       productId: product.id,
-      title: product.title,
-      price: product.salePrice || product.regularPrice,
-      quantity: 1,
-      image: product.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80'
+      title: product.title || product.name,
+      price: Number(product.price) || 0,
+      image: product.image || product.images?.[0] || '',
+      quantity: 1
     });
-    setCartToast(`"${product.title}" কার্টে যুক্ত হয়েছে!`);
-    setTimeout(() => setCartToast(null), 3000);
+    setCartDrawerOpen(true);
   };
 
-  // Direct Buy / Order Now
   const handleBuyNow = (product: any, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    handleAddToCart(product);
-    router.push(`/${tenantId}/checkout`);
+    addToCart({
+      productId: product.id,
+      title: product.title || product.name,
+      price: Number(product.price) || 0,
+      image: product.image || product.images?.[0] || '',
+      quantity: 1
+    });
+    router.push('/' + tenantId + '/checkout');
   };
 
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const cartSubtotal = getSubtotal();
-
-  if (loading) {
+  if (loading || !config) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-300 font-bold uppercase tracking-widest text-xs">স্টোর লোড হচ্ছে...</p>
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
+        <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-bold tracking-wide">স্টোর লোড হচ্ছে...</p>
       </div>
     );
   }
 
+  const currentSlide = config.heroSlider?.slides?.[activeSlide] || config.heroSlider?.slides?.[0];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-blue-600 selection:text-white" style={{ fontFamily: config.header.fontFamily }}>
+    <div className="min-h-screen bg-[#FBFBFC] text-slate-900 flex flex-col font-sans selection:bg-red-500 selection:text-white">
       
-      {/* Toast Notification */}
-      {cartToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-slide-up text-sm">
-          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="font-semibold">{cartToast}</span>
-          <button 
-            onClick={() => setIsCartOpen(true)}
-            className="ml-2 text-xs font-bold text-blue-400 hover:underline"
-          >
-            কার্ট দেখুন
-          </button>
-        </div>
-      )}
-
-      {/* 1. TOP ANNOUNCEMENT BAR */}
-      {config.header.topBarEnabled && (
-        <div 
-          className="text-xs py-2 px-4 border-b border-white/10 transition-colors z-40"
-          style={{ backgroundColor: config.header.topBarBg, color: config.header.topBarTextCol }}
-        >
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
-            <span className="font-medium tracking-wide flex items-center gap-1.5 justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>{config.header.topBarText}</span>
-            </span>
-
-            <div className="flex items-center gap-4 text-xs font-semibold">
-              {config.header.topBarPhone && (
-                <a href={`tel:${config.header.topBarPhone}`} className="hover:opacity-80 transition flex items-center gap-1">
-                  <Phone className="w-3 h-3" />
+      {/* =========================================================================
+          1. HEADER & TOP ANNOUNCEMENT BAR
+          ========================================================================= */}
+      <header className="sticky top-0 z-40 bg-white border-b border-slate-200/80 shadow-2xs">
+        
+        {/* Top Announcement Bar */}
+        {config.header.topBarEnabled && (
+          <div className="bg-[#1a1a2e] text-slate-300 py-2 px-4 text-xs font-medium">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-4">
+                <a href={'tel:' + config.header.topBarPhone} className="flex items-center gap-1.5 hover:text-white transition">
+                  <Phone className="w-3.5 h-3.5 text-red-500" />
                   <span>{config.header.topBarPhone}</span>
                 </a>
-              )}
+                <span className="hidden sm:inline text-slate-600">|</span>
+                <span className="hidden sm:flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-red-500" />
+                  <span>শনি-বৃহস্পতি: সকাল ৯টা - রাত ৯টা</span>
+                </span>
+              </div>
 
-              {/* Language Switcher */}
-              <button
-                onClick={() => setLang(lang === 'bn' ? 'en' : 'bn')}
-                className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center gap-1 cursor-pointer font-bold"
-                title="Switch Language"
-              >
-                <Globe className="w-3 h-3" />
-                <span>{lang === 'bn' ? 'ENGLISH' : 'বাংলা'}</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <span className="hidden md:inline text-slate-400">{config.header.topBarText}</span>
+                <a 
+                  href={'/' + tenantId + '#contact'} 
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[11px] transition inline-flex items-center gap-1"
+                >
+                  <span>📋 সার্ভিস বুক</span>
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 2. MAIN HEADER */}
-      <header 
-        className={`w-full border-b border-slate-100 z-40 transition-all ${config.header.sticky ? 'sticky top-0 bg-white/95 backdrop-blur-md shadow-xs' : 'bg-white'}`}
-        style={{ backgroundColor: config.header.headerBg, color: config.header.headerTextCol }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        {/* Main Header Bar */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           
-          {/* Logo & Store Identity */}
-          <Link href={`/${tenantId}`} className="flex items-center gap-3 shrink-0 group">
+          {/* Mobile Menu Toggle */}
+          <button 
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden p-2 text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 cursor-pointer"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          {/* Logo & Brand Info */}
+          <Link href={'/' + tenantId} className="flex items-center gap-3 shrink-0">
             {config.header.logoUrl ? (
               <img 
                 src={config.header.logoUrl} 
                 alt={config.header.storeName} 
-                className="h-11 w-auto max-w-[160px] object-contain"
+                className="h-10 sm:h-12 w-auto object-contain" 
               />
             ) : (
-              <div 
-                className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-md font-black text-lg transition group-hover:scale-105"
-                style={{ backgroundColor: config.header.primaryColor }}
-              >
-                <Store className="w-6 h-6" />
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-red-600 text-white font-black text-xl flex items-center justify-center shadow-md shadow-red-500/20">
+                {tenantId.charAt(0).toUpperCase()}
               </div>
             )}
-
             <div>
-              {config.header.showStoreName && (
-                <span className="text-xl md:text-2xl font-black tracking-tight block text-slate-900 leading-none">
-                  {config.header.storeName}
-                </span>
-              )}
-              {config.header.showTagline && (
-                <span className="text-[11px] text-slate-400 font-medium block mt-0.5">
-                  {config.header.tagline}
-                </span>
-              )}
+              <span className="text-xl sm:text-2xl font-black text-red-600 tracking-tight block leading-none">
+                {config.header.storeName || tenantId.toUpperCase()}
+              </span>
+              <span className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase block mt-1">
+                {config.header.tagline || 'দিনাজপুর শপ'}
+              </span>
             </div>
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input 
+          <div className="hidden md:flex flex-1 max-w-xl mx-4 relative">
+            <input
               type="text"
+              placeholder="সার্চ গ্রোসারি, স্টেশনারি, ফ্যাশন, গ্যাজেট..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={lang === 'bn' ? 'পণ্য বা ক্যাটাগরি অনুসন্ধান করুন...' : 'Search products or categories...'}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 border border-slate-200/80 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition"
+              className="w-full pl-5 pr-12 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-full text-xs font-medium focus:bg-white focus:border-red-600 outline-none transition"
             />
+            <button className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition cursor-pointer">
+              <Search className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Nav Menu Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-bold text-slate-700">
-            {config.header.menuItems.map((m: any) => (
-              <Link 
-                key={m.id} 
-                href={m.url} 
-                className="hover:text-blue-600 transition"
-              >
-                {m.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Cart & Merchant Action */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Interactive Cart Button */}
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-900 transition flex items-center gap-2 cursor-pointer shadow-xs"
-              title="শপিং ব্যাগ"
+          {/* Header Action Icons */}
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            
+            {/* Cart Trigger Button */}
+            <button 
+              onClick={() => setCartDrawerOpen(true)}
+              className="flex items-center gap-2 p-2 sm:px-3 sm:py-2 rounded-xl text-slate-800 hover:bg-red-50 hover:text-red-600 transition cursor-pointer relative"
+              title="কার্ট দেখুন"
             >
-              <ShoppingBag className="w-5 h-5 text-slate-800" />
-              <span className="hidden sm:inline text-xs font-bold">
-                {lang === 'bn' ? 'কার্ট' : 'Cart'}
-              </span>
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full text-[10px] font-black flex items-center justify-center shadow">
-                  {cartCount}
-                </span>
-              )}
+              <div className="relative">
+                <ShoppingCart className="w-6 h-6 text-slate-800" />
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce shadow">
+                    {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </div>
+              <div className="hidden sm:block text-left text-xs">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold leading-none">কার্ট</span>
+                <span className="font-bold text-red-600">৳{getSubtotal().toLocaleString()}</span>
+              </div>
             </button>
 
-            {/* Merchant Login Button */}
-            <Link 
-              href={`/${tenantId}/ecomsaas`}
-              className="text-xs font-bold px-3 py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+            {/* Checkout Quick Button */}
+            <Link
+              href={'/' + tenantId + '/checkout'}
+              className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition shadow-xs"
             >
-              {lang === 'bn' ? 'মার্চেন্ট লগিন' : 'Merchant'}
+              <span>চেকআউট</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
+
           </div>
+
         </div>
 
-        {/* Mobile Search Input */}
+        {/* Mobile Search Row */}
         <div className="md:hidden px-4 pb-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input 
+            <input
               type="text"
+              placeholder="পণ্য সার্চ করুন..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder={lang === 'bn' ? 'পণ্য সার্চ করুন...' : 'Search products...'}
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-sm outline-none"
+              className="w-full pl-4 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-full text-xs"
             />
+            <Search className="w-4 h-4 text-slate-400 absolute right-3.5 top-2.5" />
           </div>
         </div>
       </header>
 
-      {/* 3. VIDEO-LIKE HERO SLIDER */}
+      {/* =========================================================================
+          2. CINEMATIC HUD HERO SLIDER (DINAJPUR SHOP INSPIRED)
+          ========================================================================= */}
       {config.heroSlider.enabled && config.heroSlider.slides.length > 0 && (
-        <section className="relative w-full h-[450px] sm:h-[550px] md:h-[620px] bg-slate-950 overflow-hidden select-none">
+        <section 
+          className="relative w-full h-[540px] sm:h-[580px] bg-[#05070A] overflow-hidden select-none"
+          style={{ ['--theme-col' as any]: currentSlide.themeColor || '#2FD4C8' } as React.CSSProperties}
+        >
+          {/* Top HUD Bar */}
+          {config.heroSlider.showLiveBadge && (
+            <div className="absolute top-0 left-0 right-0 h-8 z-25 flex items-center gap-4 px-5 bg-black/40 border-b border-white/10 text-xs font-mono">
+              <div className="flex items-center gap-2 font-bold text-white/80">
+                <span className="w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
+                <span>সরাসরি</span>
+              </div>
+              <div className="text-white/40 hidden sm:inline uppercase">
+                {config.header.storeName || tenantId.toUpperCase()}
+              </div>
+              <div className="text-white/40 hidden sm:inline">·</div>
+              <div className="text-white/60 font-mono text-[11px]">
+                {currentSlide.skuCode || 'ONLINE SHOP'}
+              </div>
+              <div className="ml-auto text-white/70 font-mono tracking-widest text-[11px]">
+                {clockTime}
+              </div>
+            </div>
+          )}
+
+          {/* Animated Progress Track */}
+          <div className="absolute top-8 left-0 right-0 h-[2px] bg-white/10 z-25 overflow-hidden">
+            <div 
+              key={activeSlide} 
+              className="h-full bg-[var(--theme-col)] shadow-[0_0_8px_var(--theme-col)] animate-[progress_6s_linear]"
+            ></div>
+          </div>
+
+          {/* Slides Render */}
           {config.heroSlider.slides.map((slide: any, idx: number) => {
             const isActive = idx === activeSlide;
             return (
-              <div
+              <div 
                 key={slide.id || idx}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+                className={'absolute inset-0 transition-opacity duration-700 ' + (
+                  isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                )}
               >
-                {/* Simulated Video Ken-Burns Motion Slow Zoom Image */}
-                <img 
-                  src={slide.bgImage || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80'} 
-                  alt={slide.title}
-                  className={`w-full h-full object-cover transition-transform duration-[9000ms] ease-out pointer-events-none ${isActive ? 'scale-110 -translate-y-2' : 'scale-100'}`}
-                />
+                {/* Background Image with Ken Burns zoom */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div 
+                    className={'w-full h-full bg-cover bg-center ' + (isActive ? 'animate-[kenburns_10s_ease-out_forwards]' : '')}
+                    style={{ backgroundImage: 'url(' + (slide.bgImage || '') + ')' }}
+                  ></div>
+                </div>
 
-                {/* Cinematic Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950/40" />
-                <div className="absolute inset-0 bg-slate-950/30" />
+                {/* Dark Gradient Overlay & Scrim */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#050609]/95 via-[#050609]/75 to-[#050609]/40 z-2"></div>
 
-                {/* Ambient Radial Accent */}
-                <div 
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] rounded-full blur-[140px] pointer-events-none opacity-30"
-                  style={{ backgroundColor: config.header.primaryColor }}
-                />
+                {/* Giant Backdrop Watermark Word */}
+                {slide.giantWatermark && (
+                  <div className="absolute right-4 bottom-[-10px] font-black italic tracking-widest text-transparent pointer-events-none select-none text-[80px] sm:text-[140px] md:text-[200px] leading-none z-3 font-mono opacity-25 [-webkit-text-stroke:1.5px_rgba(255,255,255,0.4)]">
+                    {slide.giantWatermark}
+                  </div>
+                )}
 
-                {/* Content Overlay */}
-                <div className="relative z-20 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center text-center">
-                  
-                  {/* Floating Animated Badge */}
-                  {slide.badge && (
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-bold uppercase tracking-wider mb-6 shadow-lg">
-                      <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                      <span>{slide.badge}</span>
+                {/* Floating Cameo Circular Photo */}
+                {slide.cameoImage && (
+                  <div className="hidden md:block absolute right-[10%] top-[70px] w-36 h-36 rounded-full overflow-hidden border-3 border-white/20 shadow-2xl z-10">
+                    <img src={slide.cameoImage} alt={slide.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+
+                {/* Floating Stat Chips */}
+                {(slide.stat1Num || slide.stat2Num) && (
+                  <div className="hidden lg:flex absolute right-6 bottom-16 z-20 flex-col gap-2">
+                    {slide.stat1Num && (
+                      <div className="bg-black/60 backdrop-blur-md border border-white/15 border-l-3 border-l-[var(--theme-col)] px-3.5 py-2 rounded">
+                        <div className="text-lg font-black text-white leading-none">{slide.stat1Num}</div>
+                        <div className="text-[10px] text-white/70 mt-0.5">{slide.stat1Lbl}</div>
+                      </div>
+                    )}
+                    {slide.stat2Num && (
+                      <div className="bg-black/60 backdrop-blur-md border border-white/15 border-l-3 border-l-[var(--theme-col)] px-3.5 py-2 rounded">
+                        <div className="text-lg font-black text-white leading-none">{slide.stat2Num}</div>
+                        <div className="text-[10px] text-white/70 mt-0.5">{slide.stat2Lbl}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Hanging Price Tag Content Box (Left) */}
+                <div className="absolute inset-0 z-15 flex items-center pt-8 max-w-7xl mx-auto px-4 sm:px-6">
+                  <div className="w-full sm:max-w-xl bg-[#F4EEE1] text-[#201B12] p-6 sm:p-9 rounded-2xl shadow-2xl relative border-l-4 border-l-[var(--theme-col)]">
+                    
+                    {/* Eyebrow */}
+                    <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-wider uppercase text-slate-800 mb-2">
+                      <span>{slide.eyebrow || 'স্পেশাল অফার'}</span>
                     </div>
-                  )}
 
-                  {/* Headline */}
-                  <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-5 leading-tight max-w-4xl drop-shadow-md">
-                    {slide.title}
-                  </h1>
+                    {/* Animated Heading */}
+                    <h1 className="text-2xl sm:text-4xl font-black text-[#1A1610] tracking-tight leading-tight mb-3">
+                      {slide.title}
+                    </h1>
 
-                  {/* Subtitle */}
-                  {slide.subtitle && (
-                    <p className="text-sm sm:text-lg text-slate-200 mb-8 max-w-2xl font-normal drop-shadow">
+                    {/* Description */}
+                    <p className="text-xs sm:text-sm text-[#4a4335] leading-relaxed mb-6 max-w-md">
                       {slide.subtitle}
                     </p>
-                  )}
 
-                  {/* Dual CTA Buttons */}
-                  <div className="flex flex-wrap items-center justify-center gap-4">
-                    {slide.ctaText && (
-                      <Link 
-                        href={slide.ctaLink || `/${tenantId}#products`}
-                        className="px-8 py-3.5 text-white font-bold rounded-2xl shadow-xl transition transform hover:scale-105 flex items-center gap-2 text-sm sm:text-base cursor-pointer"
-                        style={{ backgroundColor: config.header.primaryColor }}
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-3 mb-5">
+                      <Link
+                        href={slide.ctaLink || ('/' + tenantId + '/checkout')}
+                        className="px-6 py-2.5 bg-[var(--theme-col)] hover:brightness-110 text-slate-950 font-black text-sm rounded shadow-lg transition"
                       >
-                        <span>{slide.ctaText}</span>
-                        <ArrowRight className="w-4 h-4" />
+                        {slide.ctaText || 'কিনুন →'}
                       </Link>
-                    )}
 
-                    {slide.secondaryCtaText && (
-                      <Link 
-                        href={slide.secondaryCtaLink || `/${tenantId}#products`}
-                        className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl backdrop-blur-md border border-white/20 transition text-sm sm:text-base cursor-pointer"
-                      >
-                        {slide.secondaryCtaText}
-                      </Link>
-                    )}
+                      {slide.secondaryCtaText && (
+                        <Link
+                          href={slide.secondaryCtaLink || '#products'}
+                          className="px-5 py-2.5 bg-transparent hover:bg-black/5 text-[#1A1610] border border-[#cabf9d] font-bold text-sm rounded transition"
+                        >
+                          {slide.secondaryCtaText}
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* Barcode & SKU Row */}
+                    <div className="pt-3 border-t border-dashed border-[#cabf9d] flex items-center justify-between text-[11px] font-mono text-[#6b6250]">
+                      <div className="font-mono tracking-[0.2em] font-black select-none text-slate-900">
+                        |||| | || |||| | |||
+                      </div>
+                      <span>{slide.skuCode || 'PREMIUM PRODUCT'}</span>
+                    </div>
+
                   </div>
                 </div>
               </div>
             );
           })}
 
-          {/* Slider Left / Right Navigation */}
-          {config.heroSlider.slides.length > 1 && (
-            <>
-              <button 
-                onClick={() => setActiveSlide(prev => (prev - 1 + config.heroSlider.slides.length) % config.heroSlider.slides.length)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition cursor-pointer"
+          {/* Right Rail Navigation Tags */}
+          <div className="hidden md:flex absolute right-5 top-1/2 -translate-y-1/2 z-20 flex-col gap-2">
+            {config.heroSlider.slides.map((s: any, dotIdx: number) => (
+              <button
+                key={dotIdx}
+                onClick={() => setActiveSlide(dotIdx)}
+                className={'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 cursor-pointer ' + (
+                  activeSlide === dotIdx 
+                    ? 'bg-white text-slate-900 shadow-md translate-x-[-4px]' 
+                    : 'bg-black/50 text-white/70 hover:bg-black/80'
+                )}
               >
-                <ChevronLeft className="w-6 h-6" />
+                <span className={'w-2 h-2 rounded-full ' + (activeSlide === dotIdx ? 'bg-red-600' : 'bg-white/40')}></span>
+                <span>{s.eyebrow ? s.eyebrow.slice(0, 16) : ('Slide ' + (dotIdx + 1))}</span>
               </button>
-              <button 
-                onClick={() => setActiveSlide(prev => (prev + 1) % config.heroSlider.slides.length)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition cursor-pointer"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-
-              {/* Slider Dots */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5">
-                {config.heroSlider.slides.map((_: any, dotIdx: number) => (
-                  <button
-                    key={dotIdx}
-                    onClick={() => setActiveSlide(dotIdx)}
-                    className={`h-2.5 rounded-full transition-all cursor-pointer ${dotIdx === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </section>
-      )}
-
-      {/* 4. VALUE PROPOSITION BADGES */}
-      <section className="bg-white border-b border-slate-100 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-              <Truck className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{lang === 'bn' ? 'সারা দেশে ডেলিভারি' : 'Nationwide Delivery'}</h4>
-              <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'দ্রুততম হোম ডেলিভারি' : 'Reliable door-step'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{lang === 'bn' ? 'ক্যাশ অন ডেলিভারি' : 'Cash on Delivery'}</h4>
-              <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'পণ্য পেয়ে টাকা দিন' : 'Pay after checking'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80">
-            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{lang === 'bn' ? '৭ দিনের রিপ্লেসমেন্ট' : '7 Days Return'}</h4>
-              <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'সহজ রিটার্ন সুবিধা' : 'Hassle-free exchange'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50/80">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-              <Award className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-xs sm:text-sm">{lang === 'bn' ? '১০০% অরিজিনাল' : '100% Authentic'}</h4>
-              <p className="text-[11px] text-slate-500">{lang === 'bn' ? 'কোয়ালিটি নিশ্চয়তা' : 'Verified products'}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. THUMBNAIL CATEGORIES SECTION */}
-      {config.categories.enabled && displayCategories.length > 0 && (
-        <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              {config.categories.title}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              {config.categories.subtitle}
-            </p>
-          </div>
-
-          <div className="flex items-center justify-center gap-4 sm:gap-6 overflow-x-auto pb-4 scrollbar-none">
-            {/* All Products Pill */}
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`flex flex-col items-center gap-2 shrink-0 group cursor-pointer transition transform hover:scale-105 ${selectedCategory === 'all' ? 'opacity-100' : 'opacity-85'}`}
-            >
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center font-bold text-sm shadow-md transition border-2 ${
-                selectedCategory === 'all' ? 'border-blue-600 bg-blue-600 text-white shadow-blue-500/25' : 'border-slate-200 bg-white text-slate-700 hover:border-blue-400'
-              }`}>
-                <Layers className="w-7 h-7" />
-              </div>
-              <span className={`text-xs font-bold ${selectedCategory === 'all' ? 'text-blue-600' : 'text-slate-700'}`}>
-                {lang === 'bn' ? 'সব পণ্য' : 'All'}
-              </span>
-            </button>
-
-            {/* Dynamic Category Circles */}
-            {displayCategories.map(cat => {
-              const isSelected = selectedCategory.toLowerCase() === (cat.name || cat.slug || '').toLowerCase();
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.name || cat.slug)}
-                  className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer transition transform hover:scale-105"
-                >
-                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-md transition border-2 ${
-                    isSelected ? 'border-blue-600 ring-4 ring-blue-500/20' : 'border-slate-200 hover:border-blue-400'
-                  }`}>
-                    <img 
-                      src={cat.imageUrl || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=300&q=80'} 
-                      alt={cat.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                    />
-                  </div>
-                  <span className={`text-xs font-bold max-w-[85px] truncate text-center ${isSelected ? 'text-blue-600' : 'text-slate-700'}`}>
-                    {cat.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* 6. PROMOTIONAL 2-COLUMN BANNERS */}
-      {config.banners.showPromoBanners && config.banners.items.length > 0 && (
-        <section className="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" id="offers">
-          <div className="grid md:grid-cols-2 gap-6">
-            {config.banners.items.map((b: any) => (
-              <div 
-                key={b.id} 
-                className="relative h-60 sm:h-72 rounded-3xl overflow-hidden shadow-lg group border border-slate-100 flex items-center p-8 text-white"
-              >
-                <img 
-                  src={b.imageUrl} 
-                  alt={b.title} 
-                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/60 to-transparent" />
-
-                <div className="relative z-10 max-w-xs space-y-3">
-                  <span className="px-3 py-1 bg-amber-500 text-slate-950 text-xs font-black rounded-lg uppercase tracking-wider">
-                    {b.discount}
-                  </span>
-                  <h3 className="text-2xl font-black leading-tight text-white">{b.title}</h3>
-                  <Link 
-                    href={b.linkUrl || `/${tenantId}#products`}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-slate-950 rounded-xl text-xs font-bold hover:bg-slate-100 transition shadow"
-                  >
-                    <span>{b.btnText}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
             ))}
           </div>
-        </section>
-      )}
 
-      {/* 7. FLASH SALE COUNTDOWN CTA */}
-      {config.banners.showFlashSale && (
-        <section className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="relative rounded-3xl overflow-hidden p-8 sm:p-12 text-white bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 border border-white/10">
-            <div className="space-y-3 text-center md:text-left">
-              <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-400/30 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
-                <Flame className="w-3.5 h-3.5 text-red-400" />
-                <span>{config.banners.flashSaleDiscount}</span>
-              </span>
-              <h3 className="text-2xl sm:text-4xl font-black tracking-tight">{config.banners.flashSaleTitle}</h3>
-              <p className="text-slate-300 text-sm max-w-md">{config.banners.flashSaleSubtitle}</p>
-            </div>
-
-            {/* Countdown Boxes */}
-            <div className="flex items-center gap-3">
-              <div className="bg-slate-950/70 border border-white/10 px-4 py-3 rounded-2xl text-center min-w-[70px]">
-                <span className="text-2xl sm:text-3xl font-black block">{String(timeLeft.hours).padStart(2, '0')}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">{lang === 'bn' ? 'ঘণ্টা' : 'Hours'}</span>
-              </div>
-              <span className="text-2xl font-bold">:</span>
-              <div className="bg-slate-950/70 border border-white/10 px-4 py-3 rounded-2xl text-center min-w-[70px]">
-                <span className="text-2xl sm:text-3xl font-black block">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">{lang === 'bn' ? 'মিনিট' : 'Mins'}</span>
-              </div>
-              <span className="text-2xl font-bold">:</span>
-              <div className="bg-slate-950/70 border border-white/10 px-4 py-3 rounded-2xl text-center min-w-[70px]">
-                <span className="text-2xl sm:text-3xl font-black text-amber-400 block">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase">{lang === 'bn' ? 'সেকেন্ড' : 'Secs'}</span>
-              </div>
-            </div>
-
-            <Link
-              href={config.banners.flashSaleLink || `/${tenantId}/checkout`}
-              className="px-8 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-2xl transition shadow-xl shrink-0"
+          {/* Bottom Controls: Arrows & Counter */}
+          <div className="absolute bottom-4 left-6 z-25 flex items-center gap-3">
+            <button
+              onClick={() => setActiveSlide(prev => (prev - 1 + config.heroSlider.slides.length) % config.heroSlider.slides.length)}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
             >
-              {lang === 'bn' ? 'অফারটি লুফে নিন' : 'Claim Offer Now'}
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {/* 8. MAIN PRODUCT GRID */}
-      {config.products.showFeaturedGrid && (
-        <section className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" id="products">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {config.products.featuredTitle}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                {config.products.featuredSubtitle}
-              </p>
-            </div>
-
-            {/* Total Results Count */}
-            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
-              {lang === 'bn' ? `মোট ${displayProducts.length}টি পণ্য` : `${displayProducts.length} Products Found`}
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setActiveSlide(prev => (prev + 1) % config.heroSlider.slides.length)}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <span className="text-white/60 font-mono text-xs tracking-widest ml-2">
+              {String(activeSlide + 1).padStart(2, '0')} / {String(config.heroSlider.slides.length).padStart(2, '0')}
             </span>
           </div>
 
-          {/* Product Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {displayProducts.map(prod => (
-              <div 
-                key={prod.id} 
-                className="bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group"
-              >
-                {/* Image Container with Badge */}
-                <Link href={`/${tenantId}/product/${prod.id}`} className="aspect-square bg-slate-100 relative overflow-hidden block cursor-pointer">
-                  <img 
-                    src={prod.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80'} 
-                    alt={prod.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  />
-                  {prod.badge && (
-                    <span className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-sm">
-                      {prod.badge}
-                    </span>
-                  )}
-                </Link>
-
-                {/* Card Content */}
-                <div className="p-4 sm:p-5 flex flex-col flex-1">
-                  <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1 block">
-                    {prod.category || 'Special'}
-                  </span>
-
-                  <Link href={`/${tenantId}/product/${prod.id}`}>
-                    <h3 className="font-bold text-slate-900 text-sm sm:text-base line-clamp-2 leading-snug mb-3 group-hover:text-blue-600 transition cursor-pointer">
-                      {prod.title}
-                    </h3>
-                  </Link>
-
-                  {/* Pricing */}
-                  <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-lg sm:text-xl font-black text-slate-900 block leading-tight">
-                        ৳{prod.salePrice || prod.regularPrice}
-                      </span>
-                      {prod.salePrice && prod.salePrice < prod.regularPrice && (
-                        <span className="text-xs text-slate-400 line-through">
-                          ৳{prod.regularPrice}
-                        </span>
-                      )}
-                    </div>
-
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
-                      ইন স্টক
-                    </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={(e) => handleAddToCart(prod, e)}
-                      className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>{lang === 'bn' ? 'কার্ট' : 'Add'}</span>
-                    </button>
-                    <button
-                      onClick={(e) => handleBuyNow(prod, e)}
-                      className="py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/20"
-                    >
-                      <span>{lang === 'bn' ? 'অর্ডার' : 'Buy'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 
-      {/* 9. 4-COLUMN RICH FOOTER */}
-      <footer 
-        className="mt-auto border-t border-slate-800 pt-16 pb-12"
-        style={{ backgroundColor: config.footer.bgColor, color: config.footer.textColor }}
-        id="contact"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-          
-          {/* Column 1: Store Logo & Compliance Badges */}
-          <div className="space-y-4">
-            <Link href={`/${tenantId}`} className="flex items-center gap-3">
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black shadow-md"
-                style={{ backgroundColor: config.header.primaryColor }}
-              >
-                <Store className="w-5 h-5" />
-              </div>
-              <span className="text-xl font-black text-white tracking-tight">
-                {config.header.storeName}
-              </span>
-            </Link>
+      {/* =========================================================================
+          3. DYNAMIC SECTIONS SYSTEM (ELEMENTOR-STYLE HOMEPAGE BUILDER)
+          ========================================================================= */}
+      <main className="flex-1 w-full space-y-12 py-8">
+        {config.sections.map((section: any, secIdx: number) => {
+          if (!section.enabled) return null;
 
-            <p className="text-xs leading-relaxed text-slate-400">
+          // SECTION TYPE 1: CATEGORY SHOWCASE
+          if (section.type === 'category_grid') {
+            return (
+              <section key={section.id || secIdx} className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    {section.title || 'জনপ্রিয় ক্যাটাগরি সমূহ'}
+                  </h2>
+                  {section.subtitle && (
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">{section.subtitle}</p>
+                  )}
+                  <div className="w-12 h-1 bg-red-600 mx-auto mt-2.5 rounded-full"></div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                  {displayCategories.map((cat: any) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.name)}
+                      className="group bg-white p-5 rounded-2xl border border-slate-200/80 hover:border-red-500 hover:shadow-lg transition text-center cursor-pointer flex flex-col items-center justify-center"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 transition duration-300">
+                        {cat.icon || '🛍️'}
+                      </div>
+                      <h3 className="font-bold text-sm text-slate-900 group-hover:text-red-600 transition">
+                        {cat.name}
+                      </h3>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          }
+
+          // SECTION TYPE 2: CATEGORY-WISE PRODUCT GRID
+          if (section.type === 'product_grid') {
+            const catFilter = section.category || 'all';
+            let prods = displayProducts;
+
+            if (catFilter !== 'all') {
+              prods = prods.filter(p => p.category?.toLowerCase() === catFilter.toLowerCase());
+            }
+
+            if (searchQuery.trim()) {
+              prods = prods.filter(p => (p.title || p.name || '').toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+
+            // Limit
+            const limit = Number(section.limit) || 8;
+            prods = prods.slice(0, limit);
+
+            // Columns CSS
+            const colCount = section.columns || 4;
+            const gridColsClass = colCount === 5 
+              ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' 
+              : colCount === 3 
+              ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3' 
+              : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+
+            return (
+              <section key={section.id || secIdx} className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 pb-4 mb-6">
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                      <span>{section.title || 'প্রোডাক্ট কালেকশন'}</span>
+                    </h2>
+                    {section.subtitle && (
+                      <p className="text-xs text-slate-500 mt-1">{section.subtitle}</p>
+                    )}
+                  </div>
+
+                  <Link
+                    href={'/' + tenantId + '#products'}
+                    className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 self-start sm:self-auto hover:underline"
+                  >
+                    <span>সব দেখুন →</span>
+                  </Link>
+                </div>
+
+                {prods.length === 0 ? (
+                  <div className="p-8 text-center bg-white rounded-2xl border border-slate-100 text-slate-400 text-sm">
+                    এই ক্যাটাগরিতে বর্তমানে কোনো পণ্য পাওয়া যায়নি।
+                  </div>
+                ) : (
+                  <div className={'grid gap-4 ' + gridColsClass}>
+                    {prods.map((prod: any) => {
+                      const title = prod.title || prod.name || 'পণ্য';
+                      const price = Number(prod.price) || 0;
+                      const origPrice = Number(prod.originalPrice) || 0;
+                      const hasDiscount = origPrice > price;
+                      const img = prod.image || prod.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80';
+
+                      return (
+                        <div 
+                          key={prod.id}
+                          className="group bg-white rounded-2xl border border-slate-200/80 hover:border-red-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                        >
+                          {/* Image Box */}
+                          <div className="relative aspect-square overflow-hidden bg-slate-100">
+                            <img 
+                              src={img} 
+                              alt={title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            />
+                            {hasDiscount && (
+                              <span className="absolute top-2.5 left-2.5 bg-red-600 text-white font-black text-[10px] uppercase px-2 py-0.5 rounded shadow">
+                                Sale!
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Info Box */}
+                          <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
+                            <div>
+                              <h3 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2 h-9">
+                                {title}
+                              </h3>
+                              
+                              <div className="flex items-baseline gap-2 mt-2">
+                                <span className="font-black text-sm sm:text-base text-red-600 font-mono">
+                                  ৳{price.toLocaleString()}
+                                </span>
+                                {hasDiscount && (
+                                  <span className="text-[11px] text-slate-400 line-through font-mono">
+                                    ৳{origPrice.toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="pt-2 flex items-center gap-1.5">
+                              <button
+                                onClick={(e) => handleAddToCart(prod, e)}
+                                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                                <span>কার্টে যোগ</span>
+                              </button>
+
+                              <button
+                                onClick={(e) => handleBuyNow(prod, e)}
+                                className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition cursor-pointer"
+                                title="সরাসরি অর্ডার"
+                              >
+                                কিনুন
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          }
+
+          // SECTION TYPE 3: MULTI-COLUMN BANNERS
+          if (section.type === 'banner_grid') {
+            const cols = Number(section.columnsCount) || 2;
+            const bannerColClass = cols === 1 ? 'grid-cols-1' : cols === 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2';
+
+            return (
+              <section key={section.id || secIdx} className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className={'grid gap-5 ' + bannerColClass}>
+                  {section.banners?.map((b: any, bIdx: number) => (
+                    <div 
+                      key={b.id || bIdx}
+                      className="relative rounded-3xl overflow-hidden min-h-[220px] sm:min-h-[260px] p-6 sm:p-8 flex flex-col justify-end text-white shadow-lg group"
+                    >
+                      <div 
+                        className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
+                        style={{ backgroundImage: 'url(' + (b.imageUrl || '') + ')' }}
+                      ></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/50 to-transparent"></div>
+
+                      <div className="relative z-10 space-y-2">
+                        {b.discount && (
+                          <span className="inline-block bg-red-600 text-white font-black text-xs px-2.5 py-1 rounded-lg">
+                            {b.discount}
+                          </span>
+                        )}
+                        <h3 className="text-xl sm:text-2xl font-black tracking-tight">{b.title}</h3>
+                        <Link 
+                          href={b.linkUrl || ('/' + tenantId + '#products')}
+                          className="inline-flex items-center gap-1.5 font-bold text-xs text-white hover:text-red-400 transition underline underline-offset-4"
+                        >
+                          <span>{b.btnText || 'অর্ডার করুন'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          }
+
+          // SECTION TYPE 4: FLASH SALE CTA BANNER
+          if (section.type === 'cta_banner') {
+            return (
+              <section key={section.id || secIdx} className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className={'relative rounded-3xl overflow-hidden p-8 sm:p-12 text-white shadow-xl bg-gradient-to-r ' + (section.gradient || 'from-rose-600 via-red-600 to-indigo-950')}>
+                  <div className="relative z-10 max-w-2xl space-y-3">
+                    {section.badge && (
+                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-wider">
+                        {section.badge}
+                      </span>
+                    )}
+                    <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+                      {section.title || 'স্পেশাল ফ্ল্যাশ ডিল ২০২৬'}
+                    </h2>
+                    <p className="text-white/80 text-xs sm:text-sm leading-relaxed max-w-lg">
+                      {section.subtitle}
+                    </p>
+                    <div className="pt-2">
+                      <Link
+                        href={section.btnLink || ('/' + tenantId + '/checkout')}
+                        className="px-6 py-3 bg-white hover:bg-slate-100 text-slate-900 font-black text-sm rounded-xl shadow-lg transition inline-flex items-center gap-2"
+                      >
+                        <span>{section.btnText || 'অর্ডার করুন'}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          }
+
+          // SECTION TYPE 5: SERVICES & FEATURES GRID (DINAJPUR SHOP STYLE)
+          if (section.type === 'service_grid') {
+            return (
+              <section key={section.id || secIdx} className="bg-white py-12 border-y border-slate-200/80">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                  <div className="text-center mb-10">
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                      {section.title || 'আমাদের প্রফেশনাল সার্ভিস'}
+                    </h2>
+                    {section.subtitle && (
+                      <p className="text-xs sm:text-sm text-slate-500 mt-1">{section.subtitle}</p>
+                    )}
+                    <div className="w-16 h-1 bg-gradient-to-r from-red-600 to-emerald-600 mx-auto mt-3 rounded-full"></div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {section.services?.map((srv: any, sIdx: number) => (
+                      <div 
+                        key={srv.id || sIdx}
+                        className="group bg-white p-8 rounded-2xl border border-slate-200 border-b-4 border-b-slate-300 hover:border-b-red-600 shadow-sm hover:shadow-xl transition-all duration-300 text-center flex flex-col justify-between"
+                      >
+                        <div className="w-20 h-20 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-4xl mx-auto mb-6 group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition duration-300">
+                          {srv.icon || '🛠️'}
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">{srv.title}</h3>
+                        <p className="text-xs text-slate-600 leading-relaxed mb-6 flex-1">{srv.desc}</p>
+                        <Link 
+                          href={srv.linkUrl || '#'}
+                          className="inline-block px-6 py-2 border-2 border-red-600 text-red-600 group-hover:bg-red-600 group-hover:text-white font-bold text-xs rounded-full transition self-center"
+                        >
+                          {srv.btnText || 'বিস্তারিত জানুন'}
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+          }
+
+          // SECTION TYPE 6: TRUST STRIP
+          if (section.type === 'trust_strip') {
+            return (
+              <section key={section.id || secIdx} className="bg-slate-100 py-6 border-y border-slate-200/80">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div className="flex items-center justify-center gap-3 p-3">
+                      <Truck className="w-6 h-6 text-red-600 shrink-0" />
+                      <div className="text-left">
+                        <div className="font-bold text-xs text-slate-900">দ্রুততম ডেলিভারি</div>
+                        <div className="text-[10px] text-slate-500">সারা দেশে ক্যাশ অন ডেলিভারি</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 p-3">
+                      <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+                      <div className="text-left">
+                        <div className="font-bold text-xs text-slate-900">১০০% আসল পণ্য</div>
+                        <div className="text-[10px] text-slate-500">কোয়ালিটি ও মান নিশ্চিত</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 p-3">
+                      <RotateCcw className="w-6 h-6 text-blue-600 shrink-0" />
+                      <div className="text-left">
+                        <div className="font-bold text-xs text-slate-900">সহজ রিটার্ন পলিসি</div>
+                        <div className="text-[10px] text-slate-500">৭২ ঘণ্টার মধ্যে রিপ্লেসমেন্ট</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-3 p-3">
+                      <Headphones className="w-6 h-6 text-amber-600 shrink-0" />
+                      <div className="text-left">
+                        <div className="font-bold text-xs text-slate-900">২৪/৭ সাপোর্ট</div>
+                        <div className="text-[10px] text-slate-500">সার্বক্ষণিক হেল্পলাইন সেবা</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          }
+
+          return null;
+        })}
+      </main>
+
+      {/* =========================================================================
+          4. 4-COLUMN RICH FOOTER
+          ========================================================================= */}
+      <footer className="bg-[#12131c] text-slate-300 pt-14 pb-8 border-t border-slate-800 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+          
+          {/* Col 1: Brand story & Government compliance */}
+          <div className="space-y-3">
+            <h4 className="text-white font-black text-base uppercase tracking-wider">
+              {config.header.storeName}
+            </h4>
+            <p className="text-slate-400 text-xs leading-relaxed">
               {config.footer.col1About}
             </p>
-
-            {/* Government Compliance Numbers */}
-            <div className="pt-2 space-y-1.5 text-xs text-slate-400 font-mono">
-              {config.footer.dbid && (
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">DBID:</span>
-                  <span>{config.footer.dbid}</span>
-                </div>
-              )}
-              {config.footer.bin && (
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-400 font-bold">BIN:</span>
-                  <span>{config.footer.bin}</span>
-                </div>
-              )}
-              {config.footer.tradeLicense && (
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-400 font-bold">Trade Lic:</span>
-                  <span>{config.footer.tradeLicense}</span>
-                </div>
-              )}
+            <div className="space-y-1 text-[11px] font-mono text-slate-500 pt-2 border-t border-slate-800">
+              <div>DBID: {config.footer.dbid}</div>
+              <div>BIN: {config.footer.bin}</div>
+              <div>Trade License: {config.footer.tradeLicense}</div>
             </div>
-
-            {/* Social Media Links */}
-            {(config.footer.facebook || config.footer.whatsapp || config.footer.youtube || config.footer.instagram) && (
-              <div className="pt-2 flex items-center gap-2 flex-wrap">
-                {config.footer.facebook && (
-                  <a href={config.footer.facebook} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-blue-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="Facebook">
-                    <span>Facebook</span>
-                  </a>
-                )}
-                {config.footer.whatsapp && (
-                  <a href={config.footer.whatsapp.startsWith('http') ? config.footer.whatsapp : `https://wa.me/${config.footer.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-500/30 rounded-lg text-[11px] font-bold transition flex items-center gap-1.5" title="WhatsApp">
-                    <span>WhatsApp</span>
-                  </a>
-                )}
-                {config.footer.youtube && (
-                  <a href={config.footer.youtube} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-red-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="YouTube">
-                    <span>YouTube</span>
-                  </a>
-                )}
-                {config.footer.instagram && (
-                  <a href={config.footer.instagram} target="_blank" rel="noreferrer" className="px-2.5 py-1 bg-white/10 hover:bg-pink-600 rounded-lg text-[11px] font-bold text-white transition flex items-center gap-1.5" title="Instagram">
-                    <span>Instagram</span>
-                  </a>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* Column 2: Quick Links */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">
-              {config.footer.col2Title}
-            </h4>
-            <ul className="space-y-2.5 text-xs">
-              {config.footer.col2Links.map((l: any, lIdx: number) => (
-                <li key={lIdx}>
-                  <Link href={l.url} className="hover:text-white transition flex items-center gap-1.5">
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{l.label}</span>
+          {/* Col 2: Useful links */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm">প্রয়োজনীয় লিংক</h4>
+            <ul className="space-y-2">
+              {config.footer.col2Links?.map((lnk: any, idx: number) => (
+                <li key={idx}>
+                  <Link href={lnk.url || '#'} className="hover:text-red-400 transition">
+                    {lnk.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Column 3: Customer Care & Policies */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">
-              {config.footer.col3Title}
-            </h4>
-            <ul className="space-y-2.5 text-xs">
-              {config.footer.col3Links.map((l: any, lIdx: number) => (
-                <li key={lIdx}>
-                  <Link href={l.url} className="hover:text-white transition flex items-center gap-1.5">
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{l.label}</span>
+          {/* Col 3: Customer Care & Policies */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm">কাস্টমার কেয়ার ও পলিসি</h4>
+            <ul className="space-y-2">
+              {config.footer.col3Links?.map((lnk: any, idx: number) => (
+                <li key={idx}>
+                  <Link href={lnk.url || '#'} className="hover:text-red-400 transition">
+                    {lnk.label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Column 4: Contact & Hotline */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-wider">
-              {config.footer.col4Title}
-            </h4>
-            <div className="space-y-3 text-xs text-slate-400">
-              <div className="flex items-start gap-2.5">
-                <Phone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold text-white block text-sm">{config.footer.hotline}</span>
-                  <span className="text-[11px] text-slate-500">{config.footer.workingHours}</span>
-                </div>
+          {/* Col 4: Contact & Hotline */}
+          <div className="space-y-3">
+            <h4 className="text-white font-bold text-sm">যোগাযোগ ও সাপোর্ট</h4>
+            <div className="space-y-2 text-xs text-slate-400">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-red-500 shrink-0" />
+                <span className="text-white font-bold">{config.footer.hotline}</span>
               </div>
-
-              <div className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 text-blue-400 shrink-0" />
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-red-500 shrink-0" />
                 <span>{config.footer.email}</span>
               </div>
-
-              <div className="flex items-start gap-2.5">
-                <Store className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <span>{config.footer.address}</span>
               </div>
             </div>
           </div>
+
         </div>
 
-        {/* Bottom Bar: Copyright & Payment Badges */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>
-            © {new Date().getFullYear()} {config.header.storeName}. {config.footer.copyrightText}
-          </p>
-
-          {/* Payment Method Badges */}
-          {config.footer.showPaymentBadges && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400 mr-1">{lang === 'bn' ? 'পেমেন্ট মেথড:' : 'We Accept:'}</span>
-              <span className="px-2 py-1 bg-white/10 rounded-md text-white font-bold text-[10px]">bKash</span>
-              <span className="px-2 py-1 bg-white/10 rounded-md text-white font-bold text-[10px]">Nagad</span>
-              <span className="px-2 py-1 bg-white/10 rounded-md text-white font-bold text-[10px]">Rocket</span>
-              <span className="px-2 py-1 bg-white/10 rounded-md text-white font-bold text-[10px]">VISA</span>
-              <span className="px-2 py-1 bg-white/10 rounded-md text-white font-bold text-[10px]">MasterCard</span>
-              <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md font-bold text-[10px]">COD</span>
-            </div>
-          )}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 border-t border-slate-800/80 text-center text-slate-500 text-[11px]">
+          <p>© {new Date().getFullYear()} {config.header.storeName}. সর্বস্বত্ব সংরক্ষিত।</p>
         </div>
       </footer>
 
-      {/* 10. SLIDE-OVER QUICK CART DRAWER */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          <div 
-            onClick={() => setIsCartOpen(false)}
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
-          />
+      {/* =========================================================================
+          5. SLIDE-OVER CART DRAWER
+          ========================================================================= */}
+      {cartDrawerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
+          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
+            
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-slate-900">
+                <ShoppingCart className="w-5 h-5 text-red-600" />
+                <span>আপনার শপিং কার্ট ({cartItems.length})</span>
+              </div>
+              <button 
+                onClick={() => setCartDrawerOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
-              
-              {/* Drawer Header */}
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-bold text-slate-900 text-lg">
-                    {lang === 'bn' ? 'আপনার শপিং ব্যাগ' : 'Shopping Cart'} ({cartCount})
-                  </h3>
+            {/* Items List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {cartItems.length === 0 ? (
+                <div className="py-20 text-center text-slate-400 space-y-2">
+                  <ShoppingBag className="w-12 h-12 mx-auto text-slate-300" />
+                  <p className="font-bold text-sm">আপনার কার্ট খালি রয়েছে</p>
+                  <p className="text-xs">পণ্য কার্টে যোগ করতে শপিং শুরু করুন</p>
                 </div>
-                <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200 transition cursor-pointer"
+              ) : (
+                cartItems.map((item: any) => (
+                  <div key={item.productId} className="flex gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <img src={item.image} alt={item.title} className="w-16 h-16 rounded-lg object-cover bg-white shrink-0" />
+                    <div className="flex-1 text-xs space-y-1">
+                      <h4 className="font-bold text-slate-900 line-clamp-1">{item.title}</h4>
+                      <div className="font-black text-red-600 font-mono">৳{item.price}</div>
+                      
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center border border-slate-300 rounded bg-white">
+                          <button 
+                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                            className="px-2 py-0.5 text-slate-600 hover:bg-slate-100"
+                          >
+                            -
+                          </button>
+                          <span className="px-2 font-bold font-mono">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                            className="px-2 py-0.5 text-slate-600 hover:bg-slate-100"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button 
+                          onClick={() => removeFromCart(item.productId)}
+                          className="text-red-500 hover:underline text-[11px]"
+                        >
+                          মুছে ফেলুন
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Drawer Footer & Checkout */}
+            {cartItems.length > 0 && (
+              <div className="p-4 border-t border-slate-200 space-y-3 bg-slate-50">
+                <div className="flex justify-between items-center text-sm font-bold text-slate-900">
+                  <span>সর্বমোট মূল্য:</span>
+                  <span className="text-lg font-black text-red-600 font-mono">৳{getSubtotal().toLocaleString()}</span>
+                </div>
+                <Link
+                  href={'/' + tenantId + '/checkout'}
+                  onClick={() => setCartDrawerOpen(false)}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-black text-sm rounded-xl text-center block shadow-lg shadow-red-500/25 transition"
                 >
+                  চেকআউট করুন →
+                </Link>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          6. MOBILE DRAWER MENU
+          ========================================================================= */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex">
+          <div className="w-72 bg-white h-full p-5 shadow-2xl flex flex-col justify-between animate-in slide-in-from-left duration-300">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+                <span className="font-black text-lg text-red-600">{config.header.storeName}</span>
+                <button onClick={() => setMobileMenuOpen(false)} className="text-slate-400 p-1">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Drawer Items */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {cartItems.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-400">
-                    <ShoppingBag className="w-16 h-16 opacity-30 mb-3" />
-                    <p className="font-bold text-slate-700">{lang === 'bn' ? 'আপনার কার্ট এখন খালি' : 'Your cart is empty'}</p>
-                    <p className="text-xs text-slate-400 mt-1">{lang === 'bn' ? 'পছন্দের পণ্য কার্টে যুক্ত করুন' : 'Add products to start shopping'}</p>
-                  </div>
-                ) : (
-                  cartItems.map(item => (
-                    <div key={item.productId} className="flex gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                      <img 
-                        src={item.image} 
-                        alt={item.title} 
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-200"
-                      />
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-bold text-slate-900 text-sm line-clamp-1">{item.title}</h4>
-                          <span className="font-bold text-blue-600 text-xs">৳{item.price}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                            <button
-                              onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                              className="text-slate-500 hover:text-slate-900 cursor-pointer"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-xs font-bold px-1.5">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                              className="text-slate-500 hover:text-slate-900 cursor-pointer"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          <button
-                            onClick={() => removeItem(item.productId)}
-                            className="text-red-500 hover:text-red-700 p-1 cursor-pointer"
-                            title="মুছে ফেলুন"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Drawer Footer */}
-              {cartItems.length > 0 && (
-                <div className="p-6 border-t border-slate-100 bg-slate-50 space-y-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 font-bold">{lang === 'bn' ? 'সাবটোটাল:' : 'Subtotal:'}</span>
-                    <span className="text-xl font-black text-slate-900">৳{cartSubtotal}</span>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setIsCartOpen(false);
-                      router.push(`/${tenantId}/checkout`);
-                    }}
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 cursor-pointer"
+              <div className="py-4 space-y-1 text-sm font-bold text-slate-800">
+                <Link 
+                  href={'/' + tenantId} 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="block py-2.5 px-3 rounded-lg hover:bg-red-50 hover:text-red-600"
+                >
+                  হোম
+                </Link>
+                {displayCategories.map(c => (
+                  <button 
+                    key={c.id} 
+                    onClick={() => { setSelectedCategory(c.name); setMobileMenuOpen(false); }} 
+                    className="w-full text-left py-2.5 px-3 rounded-lg hover:bg-red-50 hover:text-red-600 flex items-center justify-between"
                   >
-                    <span>{lang === 'bn' ? 'চেকআউট করুন (অর্ডার সম্পন্ন করুন)' : 'Proceed to Checkout'}</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>{c.name}</span>
+                    <span className="text-xs text-slate-400">{c.icon}</span>
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 text-xs text-slate-500 space-y-2">
+              <div>হটলাইন: {config.header.topBarPhone}</div>
+              <Link 
+                href={'/' + tenantId + '/checkout'} 
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-xl text-center block"
+              >
+                চেকআউট পেজ
+              </Link>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
