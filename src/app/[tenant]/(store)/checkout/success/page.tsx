@@ -151,13 +151,15 @@ function SuccessContent() {
             <span>অফিসিয়াল ইনভয়েস প্রিন্ট / ডাউনলোড (A4 Pad)</span>
           </a>
 
-          <button
-            onClick={handlePrint}
-            className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center gap-2 cursor-pointer border border-slate-200"
+          <a
+            href={whatsappNumber ? ('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent('হ্যালো, আমি এইমাত্র একটি অর্ডার করেছি।\nঅর্ডার/ইনভয়েস নম্বর: ' + invoiceNumber + '\nমোট মূল্য: ৳' + (order?.total || 0) + '\nঅনুগ্রহ করে অর্ডারটি দ্রুত কনফার্ম করে পাঠিয়ে দিন।')) : ('tel:' + hotline)}
+            target="_blank"
+            rel="noreferrer"
+            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition flex items-center gap-2 cursor-pointer"
           >
-            <Download className="w-4 h-4" />
-            <span>পেজ প্রিন্ট করুন</span>
-          </button>
+            <MessageCircle className="w-4 h-4" />
+            <span>হোয়াটসঅ্যাপে অর্ডার কনফার্ম করুন</span>
+          </a>
 
           <Link
             href={`/${tenantId}`}
