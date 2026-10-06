@@ -606,7 +606,7 @@ export default function StorefrontHomePage() {
           ========================================================================= */}
       {config.heroSlider.enabled && config.heroSlider.slides.length > 0 && (
         <section 
-          className="relative w-full h-[540px] sm:h-[580px] bg-[#05070A] overflow-hidden select-none"
+          className="relative w-full h-[350px] sm:h-[400px] md:h-[450px] bg-[#05070A] overflow-hidden select-none"
           style={{ ['--theme-col' as any]: currentSlide.themeColor || '#2FD4C8' } as React.CSSProperties}
         >
           {/* Top HUD Bar */}
@@ -667,14 +667,14 @@ export default function StorefrontHomePage() {
 
                 {/* Floating Cameo Circular Photo */}
                 {slide.cameoImage && (
-                  <div className="hidden md:block absolute right-[10%] top-[70px] w-36 h-36 rounded-full overflow-hidden border-3 border-white/20 shadow-2xl z-10">
+                  <div className="hidden md:block absolute right-[8%] top-[50px] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-3 border-white/20 shadow-2xl z-10">
                     <img src={slide.cameoImage} alt={slide.title} className="w-full h-full object-cover" />
                   </div>
                 )}
 
                 {/* Floating Stat Chips */}
                 {(slide.stat1Num || slide.stat2Num) && (
-                  <div className="hidden lg:flex absolute right-6 bottom-16 z-20 flex-col gap-2">
+                  <div className="hidden lg:flex absolute right-6 bottom-12 z-20 flex-col gap-2">
                     {slide.stat1Num && (
                       <div className="bg-black/60 backdrop-blur-md border border-white/15 border-l-3 border-l-[var(--theme-col)] px-3.5 py-2 rounded">
                         <div className="text-lg font-black text-white leading-none">{slide.stat1Num}</div>
@@ -691,29 +691,29 @@ export default function StorefrontHomePage() {
                 )}
 
                 {/* Hanging Price Tag Content Box (Left) */}
-                <div className="absolute inset-0 z-15 flex items-center pt-8 max-w-7xl mx-auto px-4 sm:px-6">
-                  <div className="w-full sm:max-w-xl bg-[#F4EEE1] text-[#201B12] p-6 sm:p-9 rounded-2xl shadow-2xl relative border-l-4 border-l-[var(--theme-col)]">
+                <div className="absolute inset-0 z-15 flex items-center pt-7 sm:pt-9 max-w-7xl mx-auto px-4 sm:px-6">
+                  <div className="w-full max-w-md sm:max-w-lg md:max-w-xl bg-[#F4EEE1] text-[#201B12] p-4 sm:p-6 md:p-7 rounded-xl sm:rounded-2xl shadow-2xl relative border-l-4 border-l-[var(--theme-col)]">
                     
                     {/* Eyebrow */}
-                    <div className="inline-flex items-center gap-2 text-xs font-mono font-bold tracking-wider uppercase text-slate-800 mb-2">
+                    <div className="inline-flex items-center gap-2 text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase text-slate-800 mb-1 sm:mb-1.5">
                       <span>{slide.eyebrow || 'স্পেশাল অফার'}</span>
                     </div>
 
                     {/* Animated Heading */}
-                    <h1 className="text-2xl sm:text-4xl font-black text-[#1A1610] tracking-tight leading-tight mb-3">
+                    <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-[#1A1610] tracking-tight leading-tight mb-1.5 sm:mb-2 line-clamp-2">
                       {slide.title}
                     </h1>
 
                     {/* Description */}
-                    <p className="text-xs sm:text-sm text-[#4a4335] leading-relaxed mb-6 max-w-md">
+                    <p className="text-[11px] sm:text-xs md:text-sm text-[#4a4335] leading-snug mb-3 sm:mb-4 max-w-md line-clamp-2">
                       {slide.subtitle}
                     </p>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-3 mb-5">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-3.5">
                       <Link
                         href={slide.ctaLink || ('/' + tenantId + '/checkout')}
-                        className="px-6 py-2.5 bg-[var(--theme-col)] hover:brightness-110 text-slate-950 font-black text-sm rounded shadow-lg transition"
+                        className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[var(--theme-col)] hover:brightness-110 text-slate-950 font-black text-xs sm:text-sm rounded shadow-lg transition"
                       >
                         {slide.ctaText || 'কিনুন →'}
                       </Link>
@@ -721,7 +721,7 @@ export default function StorefrontHomePage() {
                       {slide.secondaryCtaText && (
                         <Link
                           href={slide.secondaryCtaLink || '#products'}
-                          className="px-5 py-2.5 bg-transparent hover:bg-black/5 text-[#1A1610] border border-[#cabf9d] font-bold text-sm rounded transition"
+                          className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-transparent hover:bg-black/5 text-[#1A1610] border border-[#cabf9d] font-bold text-xs sm:text-sm rounded transition"
                         >
                           {slide.secondaryCtaText}
                         </Link>
@@ -729,7 +729,7 @@ export default function StorefrontHomePage() {
                     </div>
 
                     {/* Barcode & SKU Row */}
-                    <div className="pt-3 border-t border-dashed border-[#cabf9d] flex items-center justify-between text-[11px] font-mono text-[#6b6250]">
+                    <div className="pt-2 sm:pt-2.5 border-t border-dashed border-[#cabf9d] flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-[#6b6250]">
                       <div className="font-mono tracking-[0.2em] font-black select-none text-slate-900">
                         |||| | || |||| | |||
                       </div>
@@ -761,7 +761,7 @@ export default function StorefrontHomePage() {
           </div>
 
           {/* Bottom Controls: Arrows & Counter */}
-          <div className="absolute bottom-4 left-6 z-25 flex items-center gap-3">
+          <div className="absolute bottom-2.5 sm:bottom-3 left-4 sm:left-6 z-25 flex items-center gap-2.5">
             <button
               onClick={() => setActiveSlide(prev => (prev - 1 + config.heroSlider.slides.length) % config.heroSlider.slides.length)}
               className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition cursor-pointer"
@@ -876,18 +876,24 @@ export default function StorefrontHomePage() {
                   <div className={'grid gap-4 ' + gridColsClass}>
                     {prods.map((prod: any) => {
                       const title = prod.title || prod.name || 'পণ্য';
-                      const price = Number(prod.price) || 0;
-                      const origPrice = Number(prod.originalPrice) || 0;
+                      const price = Number(prod.price || prod.salePrice || prod.regularPrice) || 0;
+                      const origPrice = Number(prod.originalPrice || prod.regularPrice) || 0;
                       const hasDiscount = origPrice > price;
                       const img = prod.image || prod.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80';
+                      const productUrl = '/' + tenantId + '/product/' + prod.id;
 
                       return (
                         <div 
                           key={prod.id}
-                          className="group bg-white rounded-2xl border border-slate-200/80 hover:border-red-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                          onClick={() => router.push(productUrl)}
+                          className="group bg-white rounded-2xl border border-slate-200/80 hover:border-red-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer relative"
                         >
-                          {/* Image Box */}
-                          <div className="relative aspect-square overflow-hidden bg-slate-100">
+                          {/* Image Box (Clickable Link) */}
+                          <Link 
+                            href={productUrl}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative aspect-square overflow-hidden bg-slate-100 block group-hover:opacity-95 transition"
+                          >
                             <img 
                               src={img} 
                               alt={title}
@@ -898,14 +904,25 @@ export default function StorefrontHomePage() {
                                 Sale!
                               </span>
                             )}
-                          </div>
+                            <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="bg-white/90 text-slate-900 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-xs">
+                                বিস্তারিত দেখুন
+                              </span>
+                            </div>
+                          </Link>
 
                           {/* Info Box */}
                           <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
                             <div>
-                              <h3 className="font-bold text-xs sm:text-sm text-slate-900 leading-snug line-clamp-2 h-9">
-                                {title}
-                              </h3>
+                              <Link 
+                                href={productUrl}
+                                onClick={(e) => e.stopPropagation()}
+                                className="block"
+                              >
+                                <h3 className="font-bold text-xs sm:text-sm text-slate-900 hover:text-red-600 transition leading-snug line-clamp-2 h-9">
+                                  {title}
+                                </h3>
+                              </Link>
                               
                               <div className="flex items-baseline gap-2 mt-2">
                                 <span className="font-black text-sm sm:text-base text-red-600 font-mono">
@@ -920,7 +937,7 @@ export default function StorefrontHomePage() {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="pt-2 flex items-center gap-1.5">
+                            <div className="pt-2 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <button
                                 onClick={(e) => handleAddToCart(prod, e)}
                                 className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
